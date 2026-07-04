@@ -5,6 +5,7 @@ Manage your API keys in one place: add an upstream API (OpenAI, Anthropic, or an
 - **Backend:** Python / FastAPI · PostgreSQL (transactional) · DuckDB (analytical)
 - **Frontend:** Next.js (dashboard + landing) — *in progress*
 - Plans live in [`docs/plans/`](docs/plans/README.md).
+- **Full local-run guide + dummy logins:** [`docs/RUNNING_LOCALLY.md`](docs/RUNNING_LOCALLY.md).
 
 ## Run with Docker
 
