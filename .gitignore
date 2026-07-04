@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+*.duckdb
+dev.db
+.env
+node_modules/
+.next/
