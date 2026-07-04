@@ -1,6 +1,13 @@
-# Checkpoint — 2026-07-04
+# Checkpoint — 2026-07-04 (updated)
 
-## State: Backend Phases 1–4 COMPLETE, all 27 tests passing
+## State: Backend COMPLETE (all 5 phases). Next: frontend (docs/plans/02).
+
+Phase 5 verified: `docker compose up --build` boots postgres + backend (alembic
+migrates on start), and an end-to-end smoke test passed against the live stack
+(signup → add API → mint token → proxied request with real-key injection →
+usage row in DuckDB → stats summary correct).
+
+## Earlier state: Backend Phases 1–4 COMPLETE, all 27 tests passing
 
 `cd backend && uv run pytest -q` → **27 passed**.
 
@@ -12,12 +19,13 @@
 - Pricing map done early (`app/pricing.py`).
 - Tests: `backend/tests/` — security, auth, apis, tokens, proxy (mock ASGI upstream), stats.
 
-### Remaining — Phase 5 (task #5, pending)
-1. **Alembic** setup (plan calls for it; currently `init_db()` create_all only).
-2. **backend/Dockerfile** (python:3.12-slim, single uvicorn worker — DuckDB single-writer).
-3. **docker-compose.yml** at repo root (postgres + backend; frontend later).
-4. **.gitignore** + root README run instructions.
-5. Then: frontend (plan 02), landing (plan 03).
+### Phase 5 — DONE
+- Alembic (`backend/alembic/`, `prepend_sys_path = .` fix), initial migration `0001`.
+- `backend/Dockerfile` (single uvicorn worker — DuckDB single-writer), root `docker-compose.yml` (postgres + backend), root `README.md`.
+
+### Remaining
+- Frontend dashboard (docs/plans/02-frontend-dashboard.md) — not started.
+- Landing + onboarding (docs/plans/03-landing-onboarding.md) — not started.
 
 ### Notes for resumption
 - Env: `uv` manages `backend/.venv` (Python 3.12). Run tests: `cd backend && uv run pytest -q`.
