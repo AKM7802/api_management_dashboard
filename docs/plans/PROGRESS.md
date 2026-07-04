@@ -30,7 +30,7 @@ usage row in DuckDB → stats summary correct).
 - Tokens: create with show-once dialog + copy + curl snippet; revoke.
 - Usage: metric/range Tabs, Recharts area chart, KPI StatCards, recent-request table.
 - Verified: `npm run build` clean; served pages render (landing/login/signup/dashboard); CORS preflight from :3000 passes against backend.
-- `frontend/Dockerfile` + compose `frontend` service added (docker image build was still running at checkpoint — verify with `docker compose build frontend`).
+- `frontend/Dockerfile` + compose `frontend` service added; **full `docker compose up` verified**: postgres + backend + frontend all running, landing page served from the container, backend healthy.
 
 ### Remaining (nice-to-haves, not blockers)
 - Playwright e2e for the browser flow (backend flow already covered by pytest + smoke script).
