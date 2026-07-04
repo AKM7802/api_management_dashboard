@@ -29,6 +29,17 @@ services:
       postgres:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # URL the BROWSER uses to reach the backend
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
   duckdata:

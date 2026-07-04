@@ -23,9 +23,18 @@ usage row in DuckDB → stats summary correct).
 - Alembic (`backend/alembic/`, `prepend_sys_path = .` fix), initial migration `0001`.
 - `backend/Dockerfile` (single uvicorn worker — DuckDB single-writer), root `docker-compose.yml` (postgres + backend), root `README.md`.
 
-### Remaining
-- Frontend dashboard (docs/plans/02-frontend-dashboard.md) — not started.
-- Landing + onboarding (docs/plans/03-landing-onboarding.md) — not started.
+### Frontend (plans 02 + 03) — DONE except final compose-image verification
+- Next.js 16 (App Router) + Tailwind v4 + shadcn/ui (**base-nova preset, @base-ui — use `render` prop, not `asChild`**) + TanStack Query + Recharts.
+- Pages: `/` landing (SSG, SEO metadata, robots.ts), `/login`, `/signup`, `/dashboard` (API list), `/apis/new`, `/apis/[id]` (Overview | Tokens | Usage tabs).
+- Auth: JWT in localStorage (v1), client-side guard in `(dashboard)/layout.tsx`, `lib/api.ts` fetch wrapper (401 → redirect).
+- Tokens: create with show-once dialog + copy + curl snippet; revoke.
+- Usage: metric/range Tabs, Recharts area chart, KPI StatCards, recent-request table.
+- Verified: `npm run build` clean; served pages render (landing/login/signup/dashboard); CORS preflight from :3000 passes against backend.
+- `frontend/Dockerfile` + compose `frontend` service added (docker image build was still running at checkpoint — verify with `docker compose build frontend`).
+
+### Remaining (nice-to-haves, not blockers)
+- Playwright e2e for the browser flow (backend flow already covered by pytest + smoke script).
+- shadcn `toggle-group` was unreachable (registry timeout) — used Tabs as segmented control instead; fine as-is.
 
 ### Notes for resumption
 - Env: `uv` manages `backend/.venv` (Python 3.12). Run tests: `cd backend && uv run pytest -q`.
