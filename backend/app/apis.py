@@ -1,6 +1,6 @@
 """CRUD for managed APIs (upstream credentials). Secrets encrypted at rest."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from app import models, schemas
 from app.auth import get_current_user
 from app.db.postgres import get_db
 from app.security import encrypt_secret
+from app.token_cache import invalidate_credential
 
 router = APIRouter(prefix="/apis", tags=["apis"])
 
@@ -62,6 +63,7 @@ def get_api(cred: models.ApiCredential = Depends(get_owned_credential)):
 @router.patch("/{api_id}", response_model=schemas.ApiOut)
 def update_api(
     body: schemas.ApiUpdate,
+    request: Request,
     cred: models.ApiCredential = Depends(get_owned_credential),
     db: Session = Depends(get_db),
 ):
@@ -73,13 +75,19 @@ def update_api(
         cred.encrypted_secret = encrypt_secret(body.secret)
         cred.secret_last4 = body.secret[-4:]
     db.commit()
+    # disable/rotation must take effect immediately, not after the cache TTL
+    if body.status is not None or body.secret is not None:
+        invalidate_credential(request.app, cred.id)
     return cred
 
 
 @router.delete("/{api_id}", status_code=204)
 def delete_api(
+    request: Request,
     cred: models.ApiCredential = Depends(get_owned_credential),
     db: Session = Depends(get_db),
 ):
+    credential_id = cred.id
     db.delete(cred)
     db.commit()
+    invalidate_credential(request.app, credential_id)

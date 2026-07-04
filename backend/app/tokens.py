@@ -1,6 +1,6 @@
 """Proxy-token lifecycle: create (raw shown once), list, revoke."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from app import models, schemas
 from app.apis import get_owned_credential
 from app.auth import get_current_user
 from app.db.postgres import get_db
+from app.token_cache import invalidate_token
 from app.security import generate_proxy_token, hash_token
 
 router = APIRouter(tags=["tokens"])
@@ -59,6 +60,7 @@ def create_token(
 @router.delete("/tokens/{token_id}", status_code=204)
 def revoke_token(
     token_id: str,
+    request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -67,3 +69,5 @@ def revoke_token(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Token not found")
     token.status = "revoked"
     db.commit()
+    # revocation must take effect immediately, not after the cache TTL
+    invalidate_token(request.app, token.token_hash)
