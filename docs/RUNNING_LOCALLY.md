@@ -91,7 +91,7 @@ through the real UI, covering personal APIs, teams, and RBAC). Use them at
 | Email | Password | Notes |
 |-------|----------|-------|
 | `alice@dummy.io` | `alicepass123` | Personal mode only. 2 APIs: one LLM-shaped (auto-detected from real token usage — no provider is ever declared) and one plain non-LLM API. Both have request history. |
-| `bob@dummy.io` | `bobpass12345` | Owner of the **Acme Corp** team (switch to it via the context switcher, top-left). Added two team APIs — "Acme Billing API" and "Acme Analytics API" — each with his own usage. Team settings → Usage shows the per-member breakdown across all three members. |
+| `bob@dummy.io` | `bobpass12345` | Owner of the **Acme Corp** team (switch to it via the context switcher, top-left). Added two team APIs — "Acme Billing API" and "Acme Analytics API" — each with his own usage. The dashboard's Members tab shows the per-member breakdown across all three members. |
 | `carol@dummy.io` | `carolpass123` | Member of **Acme Corp**, granted access to **only** "Acme Billing API". Her dashboard (in team context) shows just that one API and only her own usage — never Bob's or Dave's. She has no access to "Acme Analytics API" (a direct request for it 403s). |
 | `dave@dummy.io` | `davepass1234` | Member of **Acme Corp**, invited separately from Carol and granted access to **only** "Acme Analytics API" — the reverse of Carol's grant. Demonstrates that each member's access is set per-API, not per-team: he has no access to "Acme Billing API" (403 if requested directly), and his dashboard only ever shows Analytics. |
 
@@ -156,8 +156,8 @@ explore an already-populated example, or reproduce it from scratch:
    get a choice: **Create new** (same form as personal APIs) or **Use
    existing API**, which lists your own personal APIs and lets you move one
    into the team — its tokens and usage history come with it.
-3. **Invite a member** — open **Team settings** (account menu, top-right) →
-   the **Invite member** button sits right on the Members tab. Pick a role
+3. **Invite a member** — on the dashboard (with the team active), switch to
+   the **Members** tab (next to Overview) → **Invite member**. Pick a role
    (admin or member) and send. The dialog shows the invite link once — copy
    it (there's no email sending in this version).
 4. **Accept the invite** — open the link as the invited person (sign up
@@ -168,13 +168,17 @@ explore an already-populated example, or reproduce it from scratch:
    email. This is per-API, not per-team — granting one API never gives
    access to another. Owners and admins always have access to every team API
    implicitly.
-6. **Monitor usage per member** — Team settings → **Usage** shows every
+6. **Monitor usage per member** — the dashboard's **Members** tab shows every
    member's requests/tokens/cost/errors across all the team's APIs; a single
    API's **Usage** tab has its own "Usage by member" table scoped to just
    that API. A member's own dashboard only ever shows their own usage.
 7. **Revoke instantly** — revoking a grant (or removing a member, or
    demoting an admin to member) denies their existing proxy token at the
    very next request — no waiting, no re-issuing tokens.
+
+Members/invitations/per-member usage live on the dashboard, not a separate
+settings page — **Team settings** (account menu, admin/owner only) only has
+renaming and deleting the team.
 
 `carol@dummy.io` and `dave@dummy.io` (see the dummy accounts above) are a
 ready-made example of step 5: same team, two members, each granted a
