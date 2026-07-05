@@ -6,7 +6,7 @@
 // cache keys so a context switch always refetches instead of showing
 // stale data from the previous context.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 import { getActiveTeamId, setActiveTeamId as persistActiveTeamId } from "@/lib/api";
 
@@ -21,16 +21,17 @@ const Ctx = createContext<TeamContextValue>({
 });
 
 export function TeamProvider({ children }: { children: React.ReactNode }) {
-  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
-
-  // hydrate from localStorage after mount (avoids SSR/client mismatch) — a
-  // narrow, legitimate exception to react-hooks/set-state-in-effect: this
-  // isn't reacting to a prop/state change, it's the one-time client-only
-  // read every hydration-safe localStorage pattern requires.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveTeamIdState(getActiveTeamId());
-  }, []);
+  // Lazy-init straight from localStorage (not an effect-based hydrate).
+  // api()'s X-Team-Id header is ALSO read synchronously from localStorage,
+  // so this must match on the very first render -- an effect-based
+  // "start null, correct after mount" here previously let a query fire
+  // with cache key ["apis", null] while the header it actually sent was
+  // still the old team's, poisoning the Personal-mode cache entry with
+  // team data. That's a real bug, worse than the cosmetic SSR/client text
+  // mismatch this trades for (React just reconciles it on hydration).
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(() =>
+    getActiveTeamId(),
+  );
 
   function setActiveTeamId(id: string | null) {
     persistActiveTeamId(id);

@@ -84,21 +84,25 @@ The frontend reads the backend URL from `NEXT_PUBLIC_API_URL`
 
 ## Dummy login data
 
-These accounts already exist in the Docker Compose database (created during testing).
-Use them at **http://localhost:3000/login**:
+These accounts already exist in the Docker Compose database (seeded end-to-end
+through the real UI, covering personal APIs, teams, and RBAC). Use them at
+**http://localhost:3000/login**:
 
 | Email | Password | Notes |
 |-------|----------|-------|
-| `alice@dummy.io` | `alicepass123` | Has 2 dummy APIs (OpenAI + Anthropic) with usage history |
-| `bob@dummy.io` | `bobpass12345` | Has 1 custom API |
-| `carol@dummy.io` | `carolpass123` | Has 1 custom API |
+| `alice@dummy.io` | `alicepass123` | Personal mode only. 2 APIs: one LLM-shaped (auto-detected from real token usage — no provider is ever declared) and one plain non-LLM API. Both have request history. |
+| `bob@dummy.io` | `bobpass12345` | Owner of the **Acme Corp** team (switch to it via the context switcher, top-left). Added "Acme Billing API" as a team API, with his own usage. Team settings → Usage shows the per-member breakdown (himself + Carol). |
+| `carol@dummy.io` | `carolpass123` | Member of **Acme Corp**, granted access to "Acme Billing API" by Bob. Her dashboard (in team context) only shows that one API and only her own usage — never Bob's. |
 
 > These live in the Postgres volume. They disappear if you run `docker compose down -v`,
 > or if you run the backend locally with the default SQLite (a separate, empty database).
 > In that case just sign up a new account at **/signup** — it takes 5 seconds.
 
 To create your own account instead, go to **http://localhost:3000/signup**
-(any email + a password of 8+ characters).
+(any email + a password of 8+ characters). Registering an API never asks for a
+provider — just a name, a base URL, and a key; whether it's treated as an LLM
+API (token/cost metrics shown) is detected automatically the first time a
+response reports token usage.
 
 ---
 
