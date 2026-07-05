@@ -67,9 +67,11 @@ export default function DashboardLayout({
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-                    {me.data.email}
-                  </DropdownMenuLabel>
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
+                      {me.data.email}
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     {team ? (

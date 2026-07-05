@@ -18,6 +18,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -76,40 +77,46 @@ export function TeamSwitcher() {
           <ChevronsUpDown className="size-3.5 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel>Context</DropdownMenuLabel>
-          <DropdownMenuItem onClick={selectPersonal}>
-            {!activeTeamId ? <Check className="size-3.5" /> : <span className="size-3.5" />}
-            Personal
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Context</DropdownMenuLabel>
+            <DropdownMenuItem onClick={selectPersonal}>
+              {!activeTeamId ? <Check className="size-3.5" /> : <span className="size-3.5" />}
+              Personal
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
           {teams.data && teams.data.length > 0 ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Teams</DropdownMenuLabel>
-              {teams.data.map((team) => (
-                <DropdownMenuItem
-                  key={team.id}
-                  onClick={() => selectTeam(team.id)}
-                >
-                  {activeTeamId === team.id ? (
-                    <Check className="size-3.5" />
-                  ) : (
-                    <span className="size-3.5" />
-                  )}
-                  <span className="flex-1 truncate">{team.name}</span>
-                  <Badge variant="outline" className="ml-auto shrink-0 text-xs">
-                    {team.my_role}
-                  </Badge>
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Teams</DropdownMenuLabel>
+                {teams.data.map((team) => (
+                  <DropdownMenuItem
+                    key={team.id}
+                    onClick={() => selectTeam(team.id)}
+                  >
+                    {activeTeamId === team.id ? (
+                      <Check className="size-3.5" />
+                    ) : (
+                      <span className="size-3.5" />
+                    )}
+                    <span className="flex-1 truncate">{team.name}</span>
+                    <Badge variant="outline" className="ml-auto shrink-0 text-xs">
+                      {team.my_role}
+                    </Badge>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
             </>
           ) : null}
           <DropdownMenuSeparator />
           {/* setDialogOpen directly (not DialogTrigger) — nesting a trigger
               inside the dropdown races with the dropdown's own close/unmount */}
-          <DropdownMenuItem onClick={() => setDialogOpen(true)}>
-            <Plus className="size-3.5" />
-            Create team
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => setDialogOpen(true)}>
+              <Plus className="size-3.5" />
+              Create team
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
