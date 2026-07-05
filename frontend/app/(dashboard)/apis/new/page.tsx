@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreateApi } from "@/lib/queries";
+import { useActiveMembership, useCreateApi } from "@/lib/queries";
 import type { Provider } from "@/lib/types";
 
 const DEFAULT_BASE_URLS: Record<Provider, string> = {
@@ -41,8 +41,25 @@ const DEFAULT_BASE_URLS: Record<Provider, string> = {
 export default function NewApiPage() {
   const router = useRouter();
   const create = useCreateApi();
+  const { role } = useActiveMembership();
   const [provider, setProvider] = useState<Provider>("openai");
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URLS.openai);
+
+  if (role === "member") {
+    return (
+      <div className="mx-auto w-full max-w-lg">
+        <Card>
+          <CardHeader>
+            <CardTitle>Members can&apos;t add APIs</CardTitle>
+            <CardDescription>
+              Only this team&apos;s owner or admins can add APIs. Ask one of
+              them to add it and grant you access.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   function onProviderChange(value: Provider) {
     setProvider(value);

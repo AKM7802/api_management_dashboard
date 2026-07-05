@@ -350,12 +350,16 @@ export function useLogs(apiId: string, limit = 25, memberId?: string) {
 
 // --- per-member usage monitoring (admin/owner only) --------------------------
 
-export function useApiUsageByMember(apiId: string, range: StatsRange) {
+export function useApiUsageByMember(
+  apiId: string,
+  range: StatsRange,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["apis", apiId, "usage-by-member", range],
     queryFn: () =>
       api<MemberUsageRow[]>(`/apis/${apiId}/usage/by-member?range=${range}`),
-    enabled: !!apiId,
+    enabled: !!apiId && enabled,
   });
 }
 

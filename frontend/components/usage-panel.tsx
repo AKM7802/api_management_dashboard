@@ -25,7 +25,12 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compactNumber, currency, milliseconds, percent } from "@/lib/format";
-import { useLogs, useStats, useStatsSummary } from "@/lib/queries";
+import {
+  useApiUsageByMember,
+  useLogs,
+  useStats,
+  useStatsSummary,
+} from "@/lib/queries";
 import type { StatsInterval, StatsRange, UsageLogRow } from "@/lib/types";
 
 const ALL_METRICS = [
@@ -72,13 +77,19 @@ function modelBreakdown(logs: UsageLogRow[]) {
 export function UsagePanel({
   apiId,
   provider,
+  teamId,
+  isAdmin,
 }: {
   apiId: string;
   provider: string;
+  teamId?: string | null;
+  isAdmin?: boolean;
 }) {
   const [range, setRange] = useState<StatsRange>("7d");
   const [metric, setMetric] = useState<MetricKey>("requests");
   const interval: StatsInterval = range === "24h" ? "hour" : "day";
+  const showByMember = !!teamId && !!isAdmin;
+  const byMember = useApiUsageByMember(apiId, range, showByMember);
 
   const stats = useStats(apiId, range, interval);
   const summary = useStatsSummary(apiId, range);
@@ -290,6 +301,63 @@ export function UsagePanel({
           </CardContent>
         </Card>
       </div>
+
+      {showByMember ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-heading">Usage by member</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Owners and admins see everyone; members only ever see their own.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {byMember.isPending ? (
+              <Skeleton className="h-32 w-full" />
+            ) : byMember.data && byMember.data.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead className="text-right">Requests</TableHead>
+                    {isLikelyLlm ? (
+                      <TableHead className="text-right">Tokens</TableHead>
+                    ) : null}
+                    {isLikelyLlm ? (
+                      <TableHead className="text-right">Cost</TableHead>
+                    ) : null}
+                    <TableHead className="text-right">Errors</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {byMember.data.map((row) => (
+                    <TableRow key={row.user_id}>
+                      <TableCell>{row.email}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.requests.toLocaleString()}
+                      </TableCell>
+                      {isLikelyLlm ? (
+                        <TableCell className="text-right tabular-nums">
+                          {compactNumber(row.total_tokens)}
+                        </TableCell>
+                      ) : null}
+                      {isLikelyLlm ? (
+                        <TableCell className="text-right tabular-nums">
+                          {currency(row.cost_usd)}
+                        </TableCell>
+                      ) : null}
+                      <TableCell className="text-right tabular-nums">
+                        {row.errors.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground">No usage yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compactNumber, currency, percent } from "@/lib/format";
-import { useAllApiStats, useApis } from "@/lib/queries";
+import { useActiveMembership, useAllApiStats, useApis } from "@/lib/queries";
 import type { StatsRange } from "@/lib/types";
 
 const ALL_METRICS = [
@@ -53,6 +53,10 @@ export default function DashboardPage() {
   const [metric, setMetric] = useState<(typeof ALL_METRICS)[number]["key"]>("requests");
 
   const apis = useApis();
+  const { role } = useActiveMembership();
+  // in Personal mode role is null (owner-equivalent); in Team mode only
+  // owner/admin may add APIs — a member's dashboard is read-only
+  const canManageApis = role === null || role === "owner" || role === "admin";
   const { isPending, interval, perApi, mergedSeries, aggregate } = useAllApiStats(
     apis.data,
     range,
@@ -119,7 +123,9 @@ export default function DashboardPage() {
             Overview
           </h1>
           <p className="text-sm text-muted-foreground">
-            Usage across all of your APIs.
+            {role === "member"
+              ? "Usage for the APIs you've been granted."
+              : "Usage across all of your APIs."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -130,25 +136,32 @@ export default function DashboardPage() {
               <TabsTrigger value="30d">30d</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button render={<Link href="/apis/new" />}>
-            <Plus data-icon="inline-start" />
-            Add API
-          </Button>
+          {canManageApis ? (
+            <Button render={<Link href="/apis/new" />}>
+              <Plus data-icon="inline-start" />
+              Add API
+            </Button>
+          ) : null}
         </div>
       </div>
 
       {!hasApis && !apis.isPending ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>Add your first API</EmptyTitle>
+            <EmptyTitle>
+              {canManageApis ? "Add your first API" : "No APIs granted yet"}
+            </EmptyTitle>
             <EmptyDescription>
-              Connect an upstream API (OpenAI, Anthropic, or any custom base
-              URL), then mint an access token to use instead of the real key.
+              {canManageApis
+                ? "Connect an upstream API (OpenAI, Anthropic, or any custom base URL), then mint an access token to use instead of the real key."
+                : "Ask a team owner or admin to grant you access to an API."}
             </EmptyDescription>
           </EmptyHeader>
-          <EmptyContent>
-            <Button render={<Link href="/apis/new" />}>Add API</Button>
-          </EmptyContent>
+          {canManageApis ? (
+            <EmptyContent>
+              <Button render={<Link href="/apis/new" />}>Add API</Button>
+            </EmptyContent>
+          ) : null}
         </Empty>
       ) : (
         <>
@@ -202,11 +215,15 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-              <CardTitle className="font-heading">Your APIs</CardTitle>
-              <Button variant="outline" size="sm" render={<Link href="/apis/new" />}>
-                <Plus data-icon="inline-start" />
-                Add API
-              </Button>
+              <CardTitle className="font-heading">
+                {role === "member" ? "Your granted APIs" : "Your APIs"}
+              </CardTitle>
+              {canManageApis ? (
+                <Button variant="outline" size="sm" render={<Link href="/apis/new" />}>
+                  <Plus data-icon="inline-start" />
+                  Add API
+                </Button>
+              ) : null}
             </CardHeader>
             <CardContent>
               <Table>

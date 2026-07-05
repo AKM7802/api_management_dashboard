@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertTriangle, Binary, DollarSign, KeyRound, Zap } from "lucide-react";
+import { AlertTriangle, Binary, DollarSign, KeyRound, Shield, Zap } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { AccessPanel } from "@/components/access-panel";
 import { KpiCard } from "@/components/kpi-card";
 import { TokensPanel } from "@/components/tokens-panel";
 import { UsagePanel } from "@/components/usage-panel";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/tabs";
 import { compactNumber, currency, percent } from "@/lib/format";
 import {
+  useActiveMembership,
   useApi,
   useDeleteApi,
   useStats,
@@ -40,6 +42,7 @@ export default function ApiDetailPage() {
   const del = useDeleteApi();
   const summary = useStatsSummary(id, "30d");
   const series = useStats(id, "30d", "day");
+  const { role } = useActiveMembership();
 
   if (api.isPending) {
     return (
@@ -51,6 +54,11 @@ export default function ApiDetailPage() {
   }
   if (!api.data) return null;
   const a = api.data;
+
+  // personal API (team_id null) → the caller is always its sole owner, full
+  // control, as today. Team API → only owner/admin can configure or grant.
+  const isTeamApi = a.team_id !== null;
+  const isAdmin = !isTeamApi || role === "owner" || role === "admin";
 
   function toggleStatus() {
     const next = a.status === "active" ? "disabled" : "active";
@@ -91,14 +99,16 @@ export default function ApiDetailPage() {
             {a.status}
           </Badge>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={toggleStatus}>
-            {a.status === "active" ? "Disable" : "Enable"}
-          </Button>
-          <Button variant="destructive" size="sm" onClick={onDelete}>
-            Delete
-          </Button>
-        </div>
+        {isAdmin ? (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={toggleStatus}>
+              {a.status === "active" ? "Disable" : "Enable"}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={onDelete}>
+              Delete
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <Tabs defaultValue="overview">
@@ -109,6 +119,12 @@ export default function ApiDetailPage() {
             Access Tokens
           </TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
+          {isTeamApi && isAdmin ? (
+            <TabsTrigger value="access">
+              <Shield data-icon="inline-start" />
+              Access
+            </TabsTrigger>
+          ) : null}
         </TabsList>
 
         <TabsContent value="overview" className="flex flex-col gap-4 pt-4">
@@ -179,8 +195,19 @@ export default function ApiDetailPage() {
         </TabsContent>
 
         <TabsContent value="usage" className="pt-4">
-          <UsagePanel apiId={a.id} provider={a.provider} />
+          <UsagePanel
+            apiId={a.id}
+            provider={a.provider}
+            teamId={a.team_id}
+            isAdmin={isAdmin}
+          />
         </TabsContent>
+
+        {isTeamApi && isAdmin ? (
+          <TabsContent value="access" className="pt-4">
+            <AccessPanel apiId={a.id} teamId={a.team_id!} />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );

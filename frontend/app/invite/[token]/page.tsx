@@ -15,9 +15,8 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { getToken } from "@/lib/api";
+import { ApiError, getToken } from "@/lib/api";
 import { useAcceptInvitation, useInvitationPreview } from "@/lib/queries";
-import { ApiError } from "@/lib/api";
 
 export default function InviteAcceptPage() {
   const { token } = useParams<{ token: string }>();
