@@ -5,6 +5,8 @@ existence, and it's the only place a "personal" user first becomes an
 "owner". Nothing here affects users who never call POST /teams.
 """
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,6 +14,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.auth import get_current_user
 from app.db.postgres import get_db
+from app.security import generate_invite_token, hash_token
 from app.teams_deps import (
     ADMIN_ROLES,
     TeamContext,
@@ -20,6 +23,8 @@ from app.teams_deps import (
 )
 
 router = APIRouter(prefix="/teams", tags=["teams"])
+
+INVITATION_TTL = timedelta(days=7)
 
 
 def _team_out(team: models.Team, role: str) -> schemas.TeamOut:
@@ -186,4 +191,90 @@ def remove_member(
             status.HTTP_403_FORBIDDEN, "Only the owner can remove an admin"
         )
     db.delete(target)
+    db.commit()
+
+
+# --- invitations (claimable link, no email infra — v1) -----------------------
+
+
+@router.post(
+    "/{team_id}/invitations", response_model=schemas.InvitationCreated, status_code=201
+)
+def create_invitation(
+    body: schemas.InvitationCreate,
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    existing_member = db.scalar(
+        select(models.TeamMembership)
+        .join(models.User, models.User.id == models.TeamMembership.user_id)
+        .where(
+            models.TeamMembership.team_id == ctx.team.id,
+            models.User.email == body.email,
+        )
+    )
+    if existing_member is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This person is already a team member"
+        )
+    pending = db.scalar(
+        select(models.TeamInvitation).where(
+            models.TeamInvitation.team_id == ctx.team.id,
+            models.TeamInvitation.email == body.email,
+            models.TeamInvitation.status == "pending",
+        )
+    )
+    if pending is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "An invitation for this email is already pending"
+        )
+
+    raw = generate_invite_token()
+    invite = models.TeamInvitation(
+        team_id=ctx.team.id,
+        email=body.email,
+        role=body.role,
+        token_hash=hash_token(raw),
+        status="pending",
+        invited_by_user_id=ctx.user.id,
+        expires_at=datetime.now(timezone.utc) + INVITATION_TTL,
+    )
+    db.add(invite)
+    db.commit()
+    return schemas.InvitationCreated(
+        id=invite.id,
+        email=invite.email,
+        role=invite.role,
+        status=invite.status,
+        created_at=invite.created_at,
+        expires_at=invite.expires_at,
+        token=raw,
+    )
+
+
+@router.get("/{team_id}/invitations", response_model=list[schemas.InvitationOut])
+def list_invitations(
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    return db.scalars(
+        select(models.TeamInvitation)
+        .where(
+            models.TeamInvitation.team_id == ctx.team.id,
+            models.TeamInvitation.status == "pending",
+        )
+        .order_by(models.TeamInvitation.created_at.desc())
+    ).all()
+
+
+@router.delete("/{team_id}/invitations/{invitation_id}", status_code=204)
+def revoke_invitation(
+    invitation_id: str,
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    invite = db.get(models.TeamInvitation, invitation_id)
+    if invite is None or invite.team_id != ctx.team.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitation not found")
+    invite.status = "revoked"
     db.commit()

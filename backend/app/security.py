@@ -11,6 +11,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from app.config import get_settings
 
 PROXY_TOKEN_PREFIX = "xpxy_live_"
+INVITE_TOKEN_PREFIX = "invite_"
 
 
 # --- passwords -------------------------------------------------------------
@@ -72,6 +73,10 @@ def decrypt_secret(ciphertext: bytes) -> str:
 
 def generate_proxy_token() -> str:
     return PROXY_TOKEN_PREFIX + secrets.token_urlsafe(32)
+
+
+def generate_invite_token() -> str:
+    return INVITE_TOKEN_PREFIX + secrets.token_urlsafe(32)
 
 
 def hash_token(raw_token: str) -> str:
