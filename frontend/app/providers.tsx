@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { TeamProvider } from "@/lib/team-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -18,8 +19,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={client}>
-        {children}
-        <Toaster />
+        <TeamProvider>
+          {children}
+          <Toaster />
+        </TeamProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

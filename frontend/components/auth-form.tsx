@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import { api, setToken } from "@/lib/api";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -39,7 +41,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         },
       );
       setToken(access_token);
-      router.push("/dashboard");
+      router.push(next && next.startsWith("/") ? next : "/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setPending(false);
@@ -98,14 +100,20 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             {mode === "login" ? (
               <>
                 No account?{" "}
-                <Link className="underline" href="/signup">
+                <Link
+                  className="underline"
+                  href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+                >
                   Sign up
                 </Link>
               </>
             ) : (
               <>
                 Already registered?{" "}
-                <Link className="underline" href="/login">
+                <Link
+                  className="underline"
+                  href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+                >
                   Log in
                 </Link>
               </>

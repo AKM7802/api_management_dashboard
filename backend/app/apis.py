@@ -20,6 +20,7 @@ from app.teams_deps import (
     ScopedCredential,
     TeamContext,
     get_active_context,
+    require_credential_access,
     require_credential_admin,
 )
 from app.token_cache import invalidate_credential, invalidate_grant
@@ -92,7 +93,9 @@ def create_api(
 
 
 @router.get("/{api_id}", response_model=schemas.ApiOut)
-def get_api(scoped: ScopedCredential = Depends(require_credential_admin)):
+def get_api(scoped: ScopedCredential = Depends(require_credential_access)):
+    # viewing (name/provider/status) is available to any granted member, not
+    # just admins — only configuring (PATCH/DELETE, below) is admin-only
     return scoped.credential
 
 

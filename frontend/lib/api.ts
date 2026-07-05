@@ -4,6 +4,7 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 const TOKEN_KEY = "apimgmt.jwt";
+const TEAM_KEY = "apimgmt.teamId";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -16,6 +17,18 @@ export function setToken(token: string) {
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+}
+
+// Active team context (opt-in): null/absent = Personal mode, identical to
+// the original single-owner flow. A value sends X-Team-Id on every request.
+export function getActiveTeamId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TEAM_KEY);
+}
+
+export function setActiveTeamId(id: string | null) {
+  if (id) localStorage.setItem(TEAM_KEY, id);
+  else localStorage.removeItem(TEAM_KEY);
 }
 
 export class ApiError extends Error {
@@ -32,11 +45,13 @@ export async function api<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const token = getToken();
+  const teamId = getActiveTeamId();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
       ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(teamId ? { "X-Team-Id": teamId } : {}),
       ...init.headers,
     },
   });

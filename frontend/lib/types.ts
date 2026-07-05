@@ -16,6 +16,7 @@ export interface ManagedApi {
   secret_last4: string;
   status: "active" | "disabled";
   created_at: string;
+  team_id: string | null; // null = personal API
 }
 
 export interface ProxyToken {
@@ -62,3 +63,56 @@ export interface UsageLogRow {
 
 export type StatsRange = "24h" | "7d" | "30d";
 export type StatsInterval = "hour" | "day";
+
+// --- teams / RBAC (opt-in; absent = Personal mode) -------------------------
+
+export type Role = "owner" | "admin" | "member";
+export type InviteRole = "admin" | "member";
+
+export interface Team {
+  id: string;
+  name: string;
+  created_at: string;
+  my_role: Role;
+}
+
+export interface Member {
+  user_id: string;
+  email: string;
+  role: Role;
+  joined_at: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface InvitationCreated extends Invitation {
+  token: string; // shown exactly once
+}
+
+export interface InvitationPreview {
+  team_name: string;
+  role: string;
+  email: string;
+}
+
+export interface Grant {
+  user_id: string;
+  email: string;
+  granted_at: string;
+}
+
+export interface MemberUsageRow {
+  user_id: string;
+  email: string;
+  requests: number;
+  total_tokens: number;
+  cost_usd: number;
+  errors: number;
+}

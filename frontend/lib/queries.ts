@@ -8,14 +8,24 @@ import {
 } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
+import { useActiveTeam } from "@/lib/team-context";
 import type {
+  Grant,
+  Invitation,
+  InvitationCreated,
+  InvitationPreview,
+  InviteRole,
   ManagedApi,
+  Member,
+  MemberUsageRow,
   ProxyToken,
   ProxyTokenCreated,
+  Role,
   StatsBucket,
   StatsInterval,
   StatsRange,
   StatsSummary,
+  Team,
   User,
   UsageLogRow,
 } from "@/lib/types";
@@ -30,18 +40,175 @@ export function useMe() {
   });
 }
 
-// --- managed APIs ---------------------------------------------------------
+// --- teams ----------------------------------------------------------------
+
+export function useTeams() {
+  return useQuery({
+    queryKey: ["teams"],
+    queryFn: () => api<Team[]>("/teams"),
+  });
+}
+
+/** The caller's role in the currently active team, or null in Personal mode
+ * (or if teams haven't loaded yet). Drives all RBAC gating in the UI. */
+export function useActiveMembership(): { role: Role | null; team: Team | null } {
+  const { activeTeamId } = useActiveTeam();
+  const teams = useTeams();
+  if (!activeTeamId || !teams.data) return { role: null, team: null };
+  const team = teams.data.find((t) => t.id === activeTeamId) ?? null;
+  return { role: team?.my_role ?? null, team };
+}
+
+export function useCreateTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string }) =>
+      api<Team>("/teams", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+  });
+}
+
+export function useRenameTeam(teamId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string }) =>
+      api<Team>(`/teams/${teamId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+  });
+}
+
+export function useDeleteTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (teamId: string) =>
+      api<void>(`/teams/${teamId}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+  });
+}
+
+export function useTransferOwnership(teamId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { user_id: string }) =>
+      api<void>(`/teams/${teamId}/transfer`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ queryKey: ["teams", teamId, "members"] });
+    },
+  });
+}
+
+// --- members ----------------------------------------------------------------
+
+export function useTeamMembers(teamId: string) {
+  return useQuery({
+    queryKey: ["teams", teamId, "members"],
+    queryFn: () => api<Member[]>(`/teams/${teamId}/members`),
+    enabled: !!teamId,
+  });
+}
+
+export function useUpdateMemberRole(teamId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: Role }) =>
+      api<Member>(`/teams/${teamId}/members/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+      }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["teams", teamId, "members"] }),
+  });
+}
+
+export function useRemoveMember(teamId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api<void>(`/teams/${teamId}/members/${userId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teams", teamId, "members"] });
+      qc.invalidateQueries({ queryKey: ["apis"] });
+    },
+  });
+}
+
+// --- invitations --------------------------------------------------------------
+
+export function useInvitations(teamId: string) {
+  return useQuery({
+    queryKey: ["teams", teamId, "invitations"],
+    queryFn: () => api<Invitation[]>(`/teams/${teamId}/invitations`),
+    enabled: !!teamId,
+  });
+}
+
+export function useCreateInvitation(teamId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { email: string; role: InviteRole }) =>
+      api<InvitationCreated>(`/teams/${teamId}/invitations`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["teams", teamId, "invitations"] }),
+  });
+}
+
+export function useRevokeInvitation(teamId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (invitationId: string) =>
+      api<void>(`/teams/${teamId}/invitations/${invitationId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["teams", teamId, "invitations"] }),
+  });
+}
+
+export function useInvitationPreview(token: string) {
+  return useQuery({
+    queryKey: ["invitations", token],
+    queryFn: () => api<InvitationPreview>(`/invitations/${token}`),
+    enabled: !!token,
+    retry: false,
+  });
+}
+
+export function useAcceptInvitation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (token: string) =>
+      api<void>("/invitations/accept", {
+        method: "POST",
+        body: JSON.stringify({ token }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+  });
+}
+
+// --- managed APIs (team-context-aware) ---------------------------------------
 
 export function useApis() {
+  const { activeTeamId } = useActiveTeam();
   return useQuery({
-    queryKey: ["apis"],
+    queryKey: ["apis", activeTeamId],
     queryFn: () => api<ManagedApi[]>("/apis"),
   });
 }
 
 export function useApi(id: string) {
+  const { activeTeamId } = useActiveTeam();
   return useQuery({
-    queryKey: ["apis", id],
+    queryKey: ["apis", id, activeTeamId],
     queryFn: () => api<ManagedApi>(`/apis/${id}`),
   });
 }
@@ -79,11 +246,43 @@ export function useDeleteApi() {
   });
 }
 
+// --- per-person access grants (team APIs only) -------------------------------
+
+export function useGrants(apiId: string) {
+  return useQuery({
+    queryKey: ["apis", apiId, "grants"],
+    queryFn: () => api<Grant[]>(`/apis/${apiId}/grants`),
+    enabled: !!apiId,
+  });
+}
+
+export function useGrantAccess(apiId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api<Grant>(`/apis/${apiId}/grants`, {
+        method: "POST",
+        body: JSON.stringify({ user_id: userId }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apis", apiId, "grants"] }),
+  });
+}
+
+export function useRevokeGrant(apiId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api<void>(`/apis/${apiId}/grants/${userId}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apis", apiId, "grants"] }),
+  });
+}
+
 // --- proxy tokens -----------------------------------------------------------
 
 export function useTokens(apiId: string) {
+  const { activeTeamId } = useActiveTeam();
   return useQuery({
-    queryKey: ["apis", apiId, "tokens"],
+    queryKey: ["apis", apiId, "tokens", activeTeamId],
     queryFn: () => api<ProxyToken[]>(`/apis/${apiId}/tokens`),
   });
 }
@@ -113,26 +312,68 @@ export function useRevokeToken(apiId: string) {
 
 // --- stats -------------------------------------------------------------------
 
-export function useStats(apiId: string, range: StatsRange, interval: StatsInterval) {
+export function useStats(
+  apiId: string,
+  range: StatsRange,
+  interval: StatsInterval,
+  memberId?: string,
+) {
+  const { activeTeamId } = useActiveTeam();
+  const qs = memberId ? `&member_id=${memberId}` : "";
   return useQuery({
-    queryKey: ["apis", apiId, "stats", range, interval],
+    queryKey: ["apis", apiId, "stats", range, interval, activeTeamId, memberId],
     queryFn: () =>
-      api<StatsBucket[]>(`/apis/${apiId}/stats?range=${range}&interval=${interval}`),
+      api<StatsBucket[]>(
+        `/apis/${apiId}/stats?range=${range}&interval=${interval}${qs}`,
+      ),
   });
 }
 
-export function useStatsSummary(apiId: string, range: StatsRange) {
+export function useStatsSummary(apiId: string, range: StatsRange, memberId?: string) {
+  const { activeTeamId } = useActiveTeam();
+  const qs = memberId ? `&member_id=${memberId}` : "";
   return useQuery({
-    queryKey: ["apis", apiId, "summary", range],
+    queryKey: ["apis", apiId, "summary", range, activeTeamId, memberId],
     queryFn: () =>
-      api<StatsSummary>(`/apis/${apiId}/stats/summary?range=${range}`),
+      api<StatsSummary>(`/apis/${apiId}/stats/summary?range=${range}${qs}`),
   });
 }
 
-export function useLogs(apiId: string, limit = 25) {
+export function useLogs(apiId: string, limit = 25, memberId?: string) {
+  const { activeTeamId } = useActiveTeam();
+  const qs = memberId ? `&member_id=${memberId}` : "";
   return useQuery({
-    queryKey: ["apis", apiId, "logs", limit],
-    queryFn: () => api<UsageLogRow[]>(`/apis/${apiId}/logs?limit=${limit}`),
+    queryKey: ["apis", apiId, "logs", limit, activeTeamId, memberId],
+    queryFn: () => api<UsageLogRow[]>(`/apis/${apiId}/logs?limit=${limit}${qs}`),
+  });
+}
+
+// --- per-member usage monitoring (admin/owner only) --------------------------
+
+export function useApiUsageByMember(apiId: string, range: StatsRange) {
+  return useQuery({
+    queryKey: ["apis", apiId, "usage-by-member", range],
+    queryFn: () =>
+      api<MemberUsageRow[]>(`/apis/${apiId}/usage/by-member?range=${range}`),
+    enabled: !!apiId,
+  });
+}
+
+export function useTeamUsageSummary(teamId: string, range: StatsRange) {
+  return useQuery({
+    queryKey: ["teams", teamId, "usage-summary", range],
+    queryFn: () =>
+      api<StatsSummary>(`/teams/${teamId}/usage/summary?range=${range}`),
+    enabled: !!teamId,
+  });
+}
+
+export function useTeamUsageByMember(teamId: string, range: StatsRange) {
+  return useQuery({
+    queryKey: ["teams", teamId, "usage-by-member", range],
+    queryFn: () =>
+      api<MemberUsageRow[]>(`/teams/${teamId}/usage/by-member?range=${range}`),
+    enabled: !!teamId,
   });
 }
 
@@ -158,18 +399,19 @@ export interface PerApiStats {
  * because every API's timestamps are truncated by the same backend clock.
  */
 export function useAllApiStats(apis: ManagedApi[] | undefined, range: StatsRange) {
+  const { activeTeamId } = useActiveTeam();
   const interval: StatsInterval = range === "24h" ? "hour" : "day";
   const ids = apis?.map((a) => a.id) ?? [];
 
   const summaryQueries = useQueries({
     queries: ids.map((id) => ({
-      queryKey: ["apis", id, "summary", range],
+      queryKey: ["apis", id, "summary", range, activeTeamId, undefined],
       queryFn: () => api<StatsSummary>(`/apis/${id}/stats/summary?range=${range}`),
     })),
   });
   const seriesQueries = useQueries({
     queries: ids.map((id) => ({
-      queryKey: ["apis", id, "stats", range, interval],
+      queryKey: ["apis", id, "stats", range, interval, activeTeamId, undefined],
       queryFn: () =>
         api<StatsBucket[]>(`/apis/${id}/stats?range=${range}&interval=${interval}`),
     })),

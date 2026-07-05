@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Logo } from "@/components/logo";
+import { TeamSwitcher } from "@/components/team-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearToken, getToken } from "@/lib/api";
-import { useMe } from "@/lib/queries";
+import { useActiveMembership, useMe } from "@/lib/queries";
 
 function initials(email: string) {
   return email.slice(0, 2).toUpperCase();
@@ -32,6 +33,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const me = useMe();
+  const { team } = useActiveMembership();
 
   // client-side guard: no token → login
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function DashboardLayout({
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
+            <TeamSwitcher />
             <ThemeToggle />
             {me.isPending ? (
               <Skeleton className="size-8 rounded-full" />
@@ -69,6 +72,13 @@ export default function DashboardLayout({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
+                    {team ? (
+                      <DropdownMenuItem
+                        onClick={() => router.push(`/teams/${team.id}`)}
+                      >
+                        Team settings
+                      </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
                   </DropdownMenuGroup>
                 </DropdownMenuContent>

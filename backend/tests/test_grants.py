@@ -36,6 +36,38 @@ def test_grants_endpoints_are_admin_only(client):
     assert r.status_code == 403
 
 
+def test_granted_member_can_view_but_not_configure_api(client):
+    """GET is available to any granted accessor (a member needs to see the
+    API's name/provider to use its Tokens/Usage tabs); PATCH/DELETE stay
+    admin-only."""
+    owner_headers, team, api, member_headers, member_id = _team_with_api_and_member(
+        client
+    )
+    admin_ctx = team_headers(owner_headers, team["id"])
+    member_ctx = team_headers(member_headers, team["id"])
+    client.post(f"/apis/{api['id']}/grants", json={"user_id": member_id}, headers=admin_ctx)
+
+    r = client.get(f"/apis/{api['id']}", headers=member_ctx)
+    assert r.status_code == 200
+    assert r.json()["id"] == api["id"]
+
+    assert (
+        client.patch(
+            f"/apis/{api['id']}", json={"name": "x"}, headers=member_ctx
+        ).status_code
+        == 403
+    )
+    assert client.delete(f"/apis/{api['id']}", headers=member_ctx).status_code == 403
+
+
+def test_ungranted_member_cannot_view_api(client):
+    owner_headers, team, api, member_headers, member_id = _team_with_api_and_member(
+        client
+    )
+    member_ctx = team_headers(member_headers, team["id"])
+    assert client.get(f"/apis/{api['id']}", headers=member_ctx).status_code == 403
+
+
 def test_member_without_grant_cannot_create_token(client):
     owner_headers, team, api, member_headers, member_id = _team_with_api_and_member(
         client
