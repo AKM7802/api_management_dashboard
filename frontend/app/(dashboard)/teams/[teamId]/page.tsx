@@ -248,8 +248,9 @@ export default function TeamSettingsPage() {
 
         <TabsContent value="members" className="flex flex-col gap-4 pt-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
               <CardTitle className="font-heading">Members</CardTitle>
+              {isAdmin ? <InviteDialog teamId={teamId} /> : null}
             </CardHeader>
             <CardContent>
               {members.isPending ? (
@@ -321,9 +322,6 @@ export default function TeamSettingsPage() {
 
         {isAdmin ? (
           <TabsContent value="invitations" className="flex flex-col gap-4 pt-4">
-            <div className="flex justify-end">
-              <InviteDialog teamId={teamId} />
-            </div>
             <Card>
               <CardHeader>
                 <CardTitle className="font-heading">Pending invitations</CardTitle>

@@ -43,9 +43,10 @@ export class ApiError extends Error {
 export async function api<T>(
   path: string,
   init: RequestInit = {},
+  opts: { forcePersonal?: boolean } = {},
 ): Promise<T> {
   const token = getToken();
-  const teamId = getActiveTeamId();
+  const teamId = opts.forcePersonal ? null : getActiveTeamId();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {

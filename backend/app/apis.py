@@ -91,6 +91,46 @@ def create_api(
     return cred
 
 
+@router.post("/{api_id}/attach-team", response_model=schemas.ApiOut)
+def attach_to_team(
+    api_id: str,
+    body: schemas.ApiAttachTeam,
+    request: Request,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Move one of the caller's own personal APIs into a team they admin —
+    lets an owner/admin reuse an API they already registered instead of
+    re-entering the same secret as a brand new team API. One-way (personal
+    -> team); there's no endpoint to move a team API back to personal."""
+    cred = db.get(models.ApiCredential, api_id)
+    if cred is None or cred.user_id != user.id or cred.team_id is not None:
+        # 404 (not 403) so we don't leak other users' resource ids, and so
+        # "already in a team" (see below) is the only 400 this can raise
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "API not found")
+
+    membership = db.scalar(
+        select(models.TeamMembership).where(
+            models.TeamMembership.team_id == body.team_id,
+            models.TeamMembership.user_id == user.id,
+        )
+    )
+    if membership is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Team not found")
+    if membership.role not in ADMIN_ROLES:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Admin or owner role required"
+        )
+
+    cred.team_id = body.team_id
+    db.commit()
+    # the caller's own cached token(s) for this credential were resolved
+    # under the old (personal) rules -- force a fresh check so the new
+    # team rules (their own admin/owner access) apply immediately
+    invalidate_credential(request.app, cred.id)
+    return cred
+
+
 @router.get("/{api_id}", response_model=schemas.ApiOut)
 def get_api(scoped: ScopedCredential = Depends(require_credential_access)):
     # viewing (name/base_url/status) is available to any granted member, not

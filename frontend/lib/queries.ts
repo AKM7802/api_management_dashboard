@@ -231,6 +231,29 @@ export function useCreateApi() {
   });
 }
 
+// APIs the caller personally owns and hasn't already put in a team --
+// candidates to attach to the currently active team, regardless of which
+// context is active (always reads Personal, bypassing X-Team-Id).
+export function usePersonalApisForAttach(enabled: boolean) {
+  return useQuery({
+    queryKey: ["apis", "personal-for-attach"],
+    queryFn: () => api<ManagedApi[]>("/apis", {}, { forcePersonal: true }),
+    enabled,
+  });
+}
+
+export function useAttachApiToTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ apiId, teamId }: { apiId: string; teamId: string }) =>
+      api<ManagedApi>(`/apis/${apiId}/attach-team`, {
+        method: "POST",
+        body: JSON.stringify({ team_id: teamId }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apis"] }),
+  });
+}
+
 export function useUpdateApi(id: string) {
   const qc = useQueryClient();
   return useMutation({

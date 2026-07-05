@@ -45,6 +45,10 @@ class ApiUpdate(BaseModel):
     secret: str | None = Field(default=None, min_length=1, max_length=4096)
 
 
+class ApiAttachTeam(BaseModel):
+    team_id: str
+
+
 class ApiOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
