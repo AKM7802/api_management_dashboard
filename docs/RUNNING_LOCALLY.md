@@ -91,8 +91,13 @@ through the real UI, covering personal APIs, teams, and RBAC). Use them at
 | Email | Password | Notes |
 |-------|----------|-------|
 | `alice@dummy.io` | `alicepass123` | Personal mode only. 2 APIs: one LLM-shaped (auto-detected from real token usage — no provider is ever declared) and one plain non-LLM API. Both have request history. |
-| `bob@dummy.io` | `bobpass12345` | Owner of the **Acme Corp** team (switch to it via the context switcher, top-left). Added "Acme Billing API" as a team API, with his own usage. Team settings → Usage shows the per-member breakdown (himself + Carol). |
-| `carol@dummy.io` | `carolpass123` | Member of **Acme Corp**, granted access to "Acme Billing API" by Bob. Her dashboard (in team context) only shows that one API and only her own usage — never Bob's. |
+| `bob@dummy.io` | `bobpass12345` | Owner of the **Acme Corp** team (switch to it via the context switcher, top-left). Added two team APIs — "Acme Billing API" and "Acme Analytics API" — each with his own usage. Team settings → Usage shows the per-member breakdown across all three members. |
+| `carol@dummy.io` | `carolpass123` | Member of **Acme Corp**, granted access to **only** "Acme Billing API". Her dashboard (in team context) shows just that one API and only her own usage — never Bob's or Dave's. She has no access to "Acme Analytics API" (a direct request for it 403s). |
+| `dave@dummy.io` | `davepass1234` | Member of **Acme Corp**, invited separately from Carol and granted access to **only** "Acme Analytics API" — the reverse of Carol's grant. Demonstrates that each member's access is set per-API, not per-team: he has no access to "Acme Billing API" (403 if requested directly), and his dashboard only ever shows Analytics. |
+
+Together, Carol and Dave demonstrate selective per-member API access on the
+same team: two members, two team APIs, each member granted exactly one and
+denied the other — set independently via each API's **Access** tab.
 
 > These live in the Postgres volume. They disappear if you run `docker compose down -v`,
 > or if you run the backend locally with the default SQLite (a separate, empty database).
@@ -136,6 +141,44 @@ There's a ready-made dummy upstream used for testing at
 `scratchpad/mock_upstream.py` — run it and register an API with base URL
 `http://localhost:9999` (or `http://172.17.0.1:9999` from inside the Docker
 backend container).
+
+---
+
+## Trying the teams flow
+
+Teams are entirely opt-in — nothing changes for a personal account until you
+create one. Log in as `bob@dummy.io` (owner of **Acme Corp**, see above) to
+explore an already-populated example, or reproduce it from scratch:
+
+1. **Create a team** — click the context switcher (top-left, next to the
+   logo) → **Create team**. You become its owner.
+2. **Add or attach an API** — click "Add API" while the team is active. You
+   get a choice: **Create new** (same form as personal APIs) or **Use
+   existing API**, which lists your own personal APIs and lets you move one
+   into the team — its tokens and usage history come with it.
+3. **Invite a member** — open **Team settings** (account menu, top-right) →
+   the **Invite member** button sits right on the Members tab. Pick a role
+   (admin or member) and send. The dialog shows the invite link once — copy
+   it (there's no email sending in this version).
+4. **Accept the invite** — open the link as the invited person (sign up
+   first if they don't have an account yet). They see a preview of which
+   team/role they're joining before accepting.
+5. **Grant per-API access** — a plain **member** sees nothing until you grant
+   it: open one of the team's APIs → **Access** tab → **Grant** next to their
+   email. This is per-API, not per-team — granting one API never gives
+   access to another. Owners and admins always have access to every team API
+   implicitly.
+6. **Monitor usage per member** — Team settings → **Usage** shows every
+   member's requests/tokens/cost/errors across all the team's APIs; a single
+   API's **Usage** tab has its own "Usage by member" table scoped to just
+   that API. A member's own dashboard only ever shows their own usage.
+7. **Revoke instantly** — revoking a grant (or removing a member, or
+   demoting an admin to member) denies their existing proxy token at the
+   very next request — no waiting, no re-issuing tokens.
+
+`carol@dummy.io` and `dave@dummy.io` (see the dummy accounts above) are a
+ready-made example of step 5: same team, two members, each granted a
+*different* one of the team's two APIs and denied the other.
 
 ---
 
