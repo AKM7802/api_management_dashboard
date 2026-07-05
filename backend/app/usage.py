@@ -8,12 +8,19 @@ import asyncio
 import json
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app import schemas
+from app import models, schemas
 from app.config import get_settings
+from app.db.postgres import get_db
 from app.db.duckdb import UsageEvent, UsageStore
-from app.teams_deps import ScopedCredential, require_credential_access
+from app.teams_deps import (
+    ScopedCredential,
+    require_credential_access,
+    require_credential_admin,
+)
 
 
 class UsageRecorder:
@@ -131,10 +138,39 @@ def _store(request: Request) -> UsageStore:
     return request.app.state.usage.store
 
 
-def _member_filter(scoped: ScopedCredential) -> str | None:
-    """A member sees only their own rows; admins/owners/personal-owners see
-    everything for the credential (team-wide)."""
-    return None if scoped.is_admin else scoped.user_id
+def _member_filter(scoped: ScopedCredential, member_id: str | None = None) -> str | None:
+    """A member always sees only their own rows, regardless of what they
+    pass. An admin/owner/personal-owner sees everything (None) by default,
+    or can drill into one teammate via ?member_id=."""
+    if not scoped.is_admin:
+        return scoped.user_id
+    return member_id
+
+
+def member_usage_rows(
+    db: Session, store: UsageStore, credential_ids: list[str], since
+) -> list[schemas.MemberUsageRow]:
+    """Shared by the per-API and team-wide by-member endpoints: joins the
+    DuckDB aggregate back to Postgres for display emails."""
+    rows = store.usage_by_member(credential_ids, since)
+    user_ids = [r["user_id"] for r in rows]
+    users = (
+        db.scalars(select(models.User).where(models.User.id.in_(user_ids))).all()
+        if user_ids
+        else []
+    )
+    email_by_id = {u.id: u.email for u in users}
+    return [
+        schemas.MemberUsageRow(
+            user_id=r["user_id"],
+            email=email_by_id.get(r["user_id"], "unknown"),
+            requests=r["requests"],
+            total_tokens=r["total_tokens"],
+            cost_usd=r["cost_usd"],
+            errors=r["errors"],
+        )
+        for r in rows
+    ]
 
 
 @router.get("/apis/{api_id}/stats", response_model=list[schemas.StatsBucket])
@@ -143,10 +179,11 @@ def api_stats(
     scoped: ScopedCredential = Depends(require_credential_access),
     range: str = Query("7d", pattern="^(24h|7d|30d)$"),
     interval: str = Query("day", pattern="^(hour|day)$"),
+    member_id: str | None = Query(None),
 ):
     since = UsageStore.parse_range(range)
     return _store(request).stats(
-        scoped.credential.id, since, interval, user_id=_member_filter(scoped)
+        scoped.credential.id, since, interval, user_id=_member_filter(scoped, member_id)
     )
 
 
@@ -155,10 +192,11 @@ def api_stats_summary(
     request: Request,
     scoped: ScopedCredential = Depends(require_credential_access),
     range: str = Query("30d", pattern="^(24h|7d|30d)$"),
+    member_id: str | None = Query(None),
 ):
     since = UsageStore.parse_range(range)
     return _store(request).summary(
-        scoped.credential.id, since, user_id=_member_filter(scoped)
+        scoped.credential.id, since, user_id=_member_filter(scoped, member_id)
     )
 
 
@@ -168,10 +206,31 @@ def api_logs(
     scoped: ScopedCredential = Depends(require_credential_access),
     limit: int = Query(50, ge=1, le=200),
     cursor: datetime | None = None,
+    member_id: str | None = Query(None),
 ):
     return _store(request).recent_logs(
-        scoped.credential.id, limit=limit, before=cursor, user_id=_member_filter(scoped)
+        scoped.credential.id,
+        limit=limit,
+        before=cursor,
+        user_id=_member_filter(scoped, member_id),
     )
+
+
+@router.get(
+    "/apis/{api_id}/usage/by-member", response_model=list[schemas.MemberUsageRow]
+)
+def api_usage_by_member(
+    request: Request,
+    scoped: ScopedCredential = Depends(require_credential_admin),
+    range: str = Query("30d", pattern="^(24h|7d|30d)$"),
+    db: Session = Depends(get_db),
+):
+    if scoped.credential.team_id is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Only team APIs support per-member usage"
+        )
+    since = UsageStore.parse_range(range)
+    return member_usage_rows(db, _store(request), [scoped.credential.id], since)
 
 
 def build_recorder() -> UsageRecorder:

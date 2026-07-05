@@ -7,12 +7,13 @@ existence, and it's the only place a "personal" user first becomes an
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.auth import get_current_user
+from app.db.duckdb import UsageStore
 from app.db.postgres import get_db
 from app.security import generate_invite_token, hash_token
 from app.teams_deps import (
@@ -22,6 +23,7 @@ from app.teams_deps import (
     require_team_role_path,
 )
 from app.token_cache import invalidate_grant
+from app.usage import member_usage_rows
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -320,3 +322,48 @@ def revoke_invitation(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitation not found")
     invite.status = "revoked"
     db.commit()
+
+
+# --- team-wide usage monitoring (admin/owner) --------------------------------
+
+
+def _team_credential_ids(db: Session, team_id: str) -> list[str]:
+    return db.scalars(
+        select(models.ApiCredential.id).where(models.ApiCredential.team_id == team_id)
+    ).all()
+
+
+@router.get("/{team_id}/usage/summary", response_model=schemas.StatsSummary)
+def team_usage_summary(
+    request: Request,
+    range: str = Query("30d", pattern="^(24h|7d|30d)$"),
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    since = UsageStore.parse_range(range)
+    credential_ids = _team_credential_ids(db, ctx.team.id)
+    rows = member_usage_rows(
+        db, request.app.state.usage.store, credential_ids, since
+    )
+    requests = sum(r.requests for r in rows)
+    return schemas.StatsSummary(
+        requests=requests,
+        total_tokens=sum(r.total_tokens for r in rows),
+        error_rate=(sum(r.errors for r in rows) / requests) if requests else 0.0,
+        avg_latency_ms=0.0,  # per-member aggregation doesn't track latency
+        cost_usd=sum(r.cost_usd for r in rows),
+    )
+
+
+@router.get(
+    "/{team_id}/usage/by-member", response_model=list[schemas.MemberUsageRow]
+)
+def team_usage_by_member(
+    request: Request,
+    range: str = Query("30d", pattern="^(24h|7d|30d)$"),
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    since = UsageStore.parse_range(range)
+    credential_ids = _team_credential_ids(db, ctx.team.id)
+    return member_usage_rows(db, request.app.state.usage.store, credential_ids, since)
