@@ -39,6 +39,7 @@ def create_token(
     raw = generate_proxy_token()
     token = models.ProxyToken(
         credential_id=cred.id,
+        created_by_user_id=cred.user_id,
         name=body.name,
         token_hash=hash_token(raw),
         token_prefix=raw[:14],  # "xpxy_live_" + 4 chars

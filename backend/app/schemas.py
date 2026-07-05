@@ -112,3 +112,96 @@ class UsageLogRow(BaseModel):
     total_tokens: int
     latency_ms: int
     cost_usd: float
+
+
+# --- teams / RBAC (opt-in; absent = Personal mode) -------------------------------
+
+Role = Literal["owner", "admin", "member"]
+InviteRole = Literal["admin", "member"]  # ownership only via transfer, never invite
+
+
+class TeamCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+class TeamUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+class TeamOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    created_at: datetime
+    my_role: Role
+
+
+class TransferOwnershipRequest(BaseModel):
+    user_id: str
+
+
+class MemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: str
+    email: str
+    role: Role
+    joined_at: datetime
+
+
+class MemberRoleUpdate(BaseModel):
+    role: Role
+
+
+class InvitationCreate(BaseModel):
+    email: EmailStr
+    role: InviteRole
+
+
+class InvitationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    email: str
+    role: str
+    status: str
+    created_at: datetime
+    expires_at: datetime
+
+
+class InvitationCreated(InvitationOut):
+    """Returned exactly once, on creation — includes the raw claim token."""
+
+    token: str
+
+
+class InvitationPreview(BaseModel):
+    team_name: str
+    role: str
+    email: str
+
+
+class InvitationAccept(BaseModel):
+    token: str
+
+
+class GrantCreate(BaseModel):
+    user_id: str
+
+
+class GrantOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: str
+    email: str
+    granted_at: datetime
+
+
+class MemberUsageRow(BaseModel):
+    user_id: str
+    email: str
+    requests: int
+    total_tokens: int
+    cost_usd: float
+    errors: int
