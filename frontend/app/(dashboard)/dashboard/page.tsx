@@ -40,27 +40,46 @@ import { useActiveMembership, useAllApiStats, useApis } from "@/lib/queries";
 import type { StatsRange } from "@/lib/types";
 
 const ALL_METRICS = [
-  { key: "requests" as const, label: "Requests", format: (n: number) => n.toLocaleString(), llmOnly: false },
-  { key: "total_tokens" as const, label: "LLM Tokens", format: compactNumber, llmOnly: true },
+  {
+    key: "requests" as const,
+    label: "Requests",
+    format: (n: number) => n.toLocaleString(),
+    llmOnly: false,
+  },
+  {
+    key: "total_tokens" as const,
+    label: "LLM Tokens",
+    format: compactNumber,
+    llmOnly: true,
+  },
   { key: "cost_usd" as const, label: "Cost", format: currency, llmOnly: true },
-  { key: "errors" as const, label: "Errors", format: (n: number) => n.toLocaleString(), llmOnly: false },
+  {
+    key: "errors" as const,
+    label: "Errors",
+    format: (n: number) => n.toLocaleString(),
+    llmOnly: false,
+  },
 ];
 
-const DONUT_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
+const DONUT_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+];
 
 export default function DashboardPage() {
   const [range, setRange] = useState<StatsRange>("7d");
-  const [metric, setMetric] = useState<(typeof ALL_METRICS)[number]["key"]>("requests");
+  const [metric, setMetric] =
+    useState<(typeof ALL_METRICS)[number]["key"]>("requests");
 
   const apis = useApis();
   const { role } = useActiveMembership();
   // in Personal mode role is null (owner-equivalent); in Team mode only
   // owner/admin may add APIs — a member's dashboard is read-only
   const canManageApis = role === null || role === "owner" || role === "admin";
-  const { isPending, interval, perApi, mergedSeries, aggregate } = useAllApiStats(
-    apis.data,
-    range,
-  );
+  const { isPending, interval, perApi, mergedSeries, aggregate } =
+    useAllApiStats(apis.data, range);
 
   const hasApis = apis.data && apis.data.length > 0;
   // registering an API never declares whether it's an LLM — purely observed
@@ -81,11 +100,22 @@ export default function DashboardPage() {
         const value = p.summary?.requests ?? 0;
         if (value === 0) return acc;
         if (i < 4) {
-          acc.push({ key: p.api.id, label: p.api.name, value, color: DONUT_COLORS[i] });
+          acc.push({
+            key: p.api.id,
+            label: p.api.name,
+            value,
+            color: DONUT_COLORS[i],
+          });
         } else {
           const other = acc.find((s) => s.key === "other");
           if (other) other.value += value;
-          else acc.push({ key: "other", label: "Other", value, color: "var(--muted-foreground)" });
+          else
+            acc.push({
+              key: "other",
+              label: "Other",
+              value,
+              color: "var(--muted-foreground)",
+            });
         }
         return acc;
       },
@@ -100,7 +130,9 @@ export default function DashboardPage() {
       return (b.summary?.[key] ?? 0) - (a.summary?.[key] ?? 0);
     })
     .slice(0, 6)
-    .filter((p) => (hasTokenData ? p.summary?.total_tokens : p.summary?.requests))
+    .filter((p) =>
+      hasTokenData ? p.summary?.total_tokens : p.summary?.requests,
+    )
     .map((p) => {
       const value = hasTokenData
         ? (p.summary?.total_tokens ?? 0)
@@ -109,7 +141,9 @@ export default function DashboardPage() {
         key: p.api.id,
         label: p.api.name,
         value,
-        formattedValue: hasTokenData ? compactNumber(value) : value.toLocaleString(),
+        formattedValue: hasTokenData
+          ? compactNumber(value)
+          : value.toLocaleString(),
       };
     });
 
@@ -135,7 +169,7 @@ export default function DashboardPage() {
             </TabsList>
           </Tabs>
           {canManageApis ? (
-            <Button render={<Link href="/apis/new" />}>
+            <Button render={<Link href="/apis/new" />} nativeButton={false}>
               <Plus data-icon="inline-start" />
               Add API
             </Button>
@@ -157,7 +191,9 @@ export default function DashboardPage() {
           </EmptyHeader>
           {canManageApis ? (
             <EmptyContent>
-              <Button render={<Link href="/apis/new" />}>Add API</Button>
+              <Button render={<Link href="/apis/new" />} nativeButton={false}>
+                Add API
+              </Button>
             </EmptyContent>
           ) : null}
         </Empty>
@@ -217,7 +253,12 @@ export default function DashboardPage() {
                 {role === "member" ? "Your granted APIs" : "Your APIs"}
               </CardTitle>
               {canManageApis ? (
-                <Button variant="outline" size="sm" render={<Link href="/apis/new" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href="/apis/new" />}
+                  nativeButton={false}
+                >
                   <Plus data-icon="inline-start" />
                   Add API
                 </Button>
@@ -253,12 +294,18 @@ export default function DashboardPage() {
                           {a.base_url}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={a.status === "active" ? "secondary" : "outline"}>
+                          <Badge
+                            variant={
+                              a.status === "active" ? "secondary" : "outline"
+                            }
+                          >
                             {a.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {stats?.summary ? stats.summary.requests.toLocaleString() : "—"}
+                          {stats?.summary
+                            ? stats.summary.requests.toLocaleString()
+                            : "—"}
                         </TableCell>
                         {hasTokenData ? (
                           <TableCell className="text-right tabular-nums">
@@ -279,7 +326,10 @@ export default function DashboardPage() {
             <Card className="lg:col-span-2">
               <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
                 <CardTitle className="font-heading">Usage over time</CardTitle>
-                <Tabs value={activeMetric.key} onValueChange={(v) => setMetric(v as typeof metric)}>
+                <Tabs
+                  value={activeMetric.key}
+                  onValueChange={(v) => setMetric(v as typeof metric)}
+                >
                   <TabsList>
                     {METRICS.map((m) => (
                       <TabsTrigger key={m.key} value={m.key}>
@@ -302,7 +352,9 @@ export default function DashboardPage() {
                         key: activeMetric.key,
                         label: activeMetric.label,
                         color:
-                          activeMetric.key === "errors" ? "var(--chart-5)" : "var(--chart-1)",
+                          activeMetric.key === "errors"
+                            ? "var(--chart-5)"
+                            : "var(--chart-1)",
                         format: activeMetric.format,
                       },
                     ]}
@@ -318,15 +370,23 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-heading">Requests by API</CardTitle>
+                  <CardTitle className="font-heading">
+                    Requests by API
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {isPending ? (
                     <Skeleton className="h-40 w-full" />
                   ) : donutData.length > 0 ? (
-                    <DonutChart data={donutData} centerLabel="requests" height={150} />
+                    <DonutChart
+                      data={donutData}
+                      centerLabel="requests"
+                      height={150}
+                    />
                   ) : (
-                    <p className="text-sm text-muted-foreground">No requests yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No requests yet.
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -346,7 +406,9 @@ export default function DashboardPage() {
                       color={hasTokenData ? "var(--chart-2)" : "var(--chart-1)"}
                     />
                   ) : (
-                    <p className="text-sm text-muted-foreground">No usage yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No usage yet.
+                    </p>
                   )}
                 </CardContent>
               </Card>

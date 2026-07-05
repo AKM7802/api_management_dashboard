@@ -18,7 +18,11 @@ export function CtaBand() {
           <p className="text-muted-foreground">
             Free, open source, and self-hostable. No credit card required.
           </p>
-          <Button size="lg" render={<Link href="/signup" />}>
+          <Button
+            size="lg"
+            render={<Link href="/signup" />}
+            nativeButton={false}
+          >
             Create your free account
             <ArrowRight data-icon="inline-end" />
           </Button>

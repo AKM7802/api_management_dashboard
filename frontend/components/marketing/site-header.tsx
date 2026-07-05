@@ -20,17 +20,32 @@ export function SiteHeader() {
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
           {NAV.map((item) => (
-            <Button key={item.href} variant="ghost" size="sm" render={<Link href={item.href} />}>
+            <Button
+              key={item.href}
+              variant="ghost"
+              size="sm"
+              render={<Link href={item.href} />}
+              nativeButton={false}
+            >
               {item.label}
             </Button>
           ))}
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" render={<Link href="/login" />}>
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href="/login" />}
+            nativeButton={false}
+          >
             Log in
           </Button>
-          <Button size="sm" render={<Link href="/signup" />}>
+          <Button
+            size="sm"
+            render={<Link href="/signup" />}
+            nativeButton={false}
+          >
             Get started
           </Button>
         </div>

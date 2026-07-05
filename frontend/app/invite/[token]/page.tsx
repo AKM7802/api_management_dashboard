@@ -74,13 +74,18 @@ export default function InviteAcceptPage() {
               ) : (
                 <div className="flex w-full flex-col gap-2">
                   <CardDescription>Log in or sign up to accept.</CardDescription>
-                  <Button className="w-full" render={<Link href={`/login?next=/invite/${token}`} />}>
+                  <Button
+                    className="w-full"
+                    render={<Link href={`/login?next=/invite/${token}`} />}
+                    nativeButton={false}
+                  >
                     Log in
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full"
                     render={<Link href={`/signup?next=/invite/${token}`} />}
+                    nativeButton={false}
                   >
                     Sign up
                   </Button>

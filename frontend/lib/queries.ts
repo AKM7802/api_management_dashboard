@@ -85,7 +85,16 @@ export function useDeleteTeam() {
   return useMutation({
     mutationFn: (teamId: string) =>
       api<void>(`/teams/${teamId}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+    onSuccess: async (_data, teamId) => {
+      // exact: true so this only refetches the plain list, not every
+      // ["teams", teamId, ...] sub-resource query too -- those would all
+      // 404 for a team that no longer exists (invalidateQueries matches by
+      // key prefix by default) and the resulting refetch storm was
+      // observed to stall the redirect away from the now-deleted team's page
+      await qc.cancelQueries({ queryKey: ["teams", teamId] });
+      qc.removeQueries({ queryKey: ["teams", teamId] });
+      qc.invalidateQueries({ queryKey: ["teams"], exact: true });
+    },
   });
 }
 
