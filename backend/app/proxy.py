@@ -19,6 +19,7 @@ from app.db.duckdb import UsageEvent
 from app.db.postgres import SessionLocal
 from app.pricing import estimate_cost
 from app.security import PROXY_TOKEN_PREFIX, decrypt_secret, hash_token
+from app.teams_deps import ADMIN_ROLES
 from app.usage import extract_model, extract_usage
 
 router = APIRouter(tags=["proxy"])
@@ -40,12 +41,14 @@ _TAIL_CAP = 64 * 1024  # last bytes kept (OpenAI final usage chunk / JSON bodies
 class ResolvedToken:
     token_id: str
     credential_id: str
-    user_id: str
+    created_by_user_id: str
+    team_id: str | None
     provider: str
     base_url: str
     encrypted_secret: bytes
     token_status: str
     credential_status: str
+    access_ok: bool
     cached_at: float = 0.0
 
 
@@ -58,18 +61,43 @@ def _load_token(token_hash: str) -> ResolvedToken | None:
         if token is None:
             return None
         cred = token.credential
+        creator_id = token.created_by_user_id
         # opportunistic last-used update (throttled by the cache TTL)
         token.last_used_at = datetime.now(timezone.utc)
         db.commit()
+
+        if cred.team_id is None:
+            # personal API: only its owner's own tokens are ever valid here
+            access_ok = creator_id == cred.user_id
+        else:
+            membership = db.scalar(
+                select(models.TeamMembership).where(
+                    models.TeamMembership.team_id == cred.team_id,
+                    models.TeamMembership.user_id == creator_id,
+                )
+            )
+            if membership is not None and membership.role in ADMIN_ROLES:
+                access_ok = True  # owners/admins have implicit team-wide access
+            else:
+                grant = db.scalar(
+                    select(models.ApiAccessGrant).where(
+                        models.ApiAccessGrant.credential_id == cred.id,
+                        models.ApiAccessGrant.user_id == creator_id,
+                    )
+                )
+                access_ok = grant is not None
+
         return ResolvedToken(
             token_id=token.id,
             credential_id=cred.id,
-            user_id=cred.user_id,
+            created_by_user_id=creator_id,
+            team_id=cred.team_id,
             provider=cred.provider,
             base_url=cred.base_url,
             encrypted_secret=cred.encrypted_secret,
             token_status=token.status,
             credential_status=cred.status,
+            access_ok=access_ok,
         )
 
 
@@ -131,7 +159,7 @@ async def proxy(path: str, request: Request):
             UsageEvent(
                 proxy_token_id=resolved.token_id,
                 credential_id=resolved.credential_id,
-                user_id=resolved.user_id,
+                user_id=resolved.created_by_user_id,  # the actor, not the API owner
                 status_code=status_code,
                 path="/" + path.lstrip("/"),
                 model=model,
@@ -148,6 +176,11 @@ async def proxy(path: str, request: Request):
     if resolved.credential_status != "active":
         _log(status.HTTP_403_FORBIDDEN)
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This API is disabled")
+    if not resolved.access_ok:
+        # a team member's grant was revoked, or they were demoted/removed —
+        # the token row still exists but is denied at the proxy immediately
+        _log(status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "API access has been revoked")
 
     # 2. decrypt the real key in memory only
     try:

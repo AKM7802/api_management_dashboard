@@ -10,10 +10,10 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app import models, schemas
-from app.apis import get_owned_credential
+from app import schemas
 from app.config import get_settings
 from app.db.duckdb import UsageEvent, UsageStore
+from app.teams_deps import ScopedCredential, require_credential_access
 
 
 class UsageRecorder:
@@ -131,35 +131,47 @@ def _store(request: Request) -> UsageStore:
     return request.app.state.usage.store
 
 
+def _member_filter(scoped: ScopedCredential) -> str | None:
+    """A member sees only their own rows; admins/owners/personal-owners see
+    everything for the credential (team-wide)."""
+    return None if scoped.is_admin else scoped.user_id
+
+
 @router.get("/apis/{api_id}/stats", response_model=list[schemas.StatsBucket])
 def api_stats(
     request: Request,
-    cred: models.ApiCredential = Depends(get_owned_credential),
+    scoped: ScopedCredential = Depends(require_credential_access),
     range: str = Query("7d", pattern="^(24h|7d|30d)$"),
     interval: str = Query("day", pattern="^(hour|day)$"),
 ):
     since = UsageStore.parse_range(range)
-    return _store(request).stats(cred.id, since, interval)
+    return _store(request).stats(
+        scoped.credential.id, since, interval, user_id=_member_filter(scoped)
+    )
 
 
 @router.get("/apis/{api_id}/stats/summary", response_model=schemas.StatsSummary)
 def api_stats_summary(
     request: Request,
-    cred: models.ApiCredential = Depends(get_owned_credential),
+    scoped: ScopedCredential = Depends(require_credential_access),
     range: str = Query("30d", pattern="^(24h|7d|30d)$"),
 ):
     since = UsageStore.parse_range(range)
-    return _store(request).summary(cred.id, since)
+    return _store(request).summary(
+        scoped.credential.id, since, user_id=_member_filter(scoped)
+    )
 
 
 @router.get("/apis/{api_id}/logs", response_model=list[schemas.UsageLogRow])
 def api_logs(
     request: Request,
-    cred: models.ApiCredential = Depends(get_owned_credential),
+    scoped: ScopedCredential = Depends(require_credential_access),
     limit: int = Query(50, ge=1, le=200),
     cursor: datetime | None = None,
 ):
-    return _store(request).recent_logs(cred.id, limit=limit, before=cursor)
+    return _store(request).recent_logs(
+        scoped.credential.id, limit=limit, before=cursor, user_id=_member_filter(scoped)
+    )
 
 
 def build_recorder() -> UsageRecorder:

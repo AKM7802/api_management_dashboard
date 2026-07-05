@@ -22,7 +22,7 @@ from app.teams_deps import (
     get_active_context,
     require_credential_admin,
 )
-from app.token_cache import invalidate_credential
+from app.token_cache import invalidate_credential, invalidate_grant
 
 router = APIRouter(prefix="/apis", tags=["apis"])
 
@@ -128,3 +128,95 @@ def delete_api(
     db.delete(scoped.credential)
     db.commit()
     invalidate_credential(request.app, credential_id)
+
+
+# --- per-person access grants (team APIs only) -------------------------------
+
+
+def _require_team_credential(
+    scoped: ScopedCredential = Depends(require_credential_admin),
+) -> ScopedCredential:
+    if scoped.credential.team_id is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Grants only apply to team APIs"
+        )
+    return scoped
+
+
+@router.get("/{api_id}/grants", response_model=list[schemas.GrantOut])
+def list_grants(
+    scoped: ScopedCredential = Depends(_require_team_credential),
+    db: Session = Depends(get_db),
+):
+    rows = db.execute(
+        select(models.ApiAccessGrant, models.User)
+        .join(models.User, models.User.id == models.ApiAccessGrant.user_id)
+        .where(models.ApiAccessGrant.credential_id == scoped.credential.id)
+        .order_by(models.ApiAccessGrant.created_at)
+    ).all()
+    return [
+        schemas.GrantOut(user_id=user.id, email=user.email, granted_at=g.created_at)
+        for g, user in rows
+    ]
+
+
+@router.post("/{api_id}/grants", response_model=schemas.GrantOut, status_code=201)
+def grant_access(
+    body: schemas.GrantCreate,
+    request: Request,
+    scoped: ScopedCredential = Depends(_require_team_credential),
+    db: Session = Depends(get_db),
+):
+    is_member = db.scalar(
+        select(models.TeamMembership).where(
+            models.TeamMembership.team_id == scoped.credential.team_id,
+            models.TeamMembership.user_id == body.user_id,
+        )
+    )
+    if is_member is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "That user isn't a member of this team"
+        )
+
+    existing = db.scalar(
+        select(models.ApiAccessGrant).where(
+            models.ApiAccessGrant.credential_id == scoped.credential.id,
+            models.ApiAccessGrant.user_id == body.user_id,
+        )
+    )
+    if existing is None:
+        existing = models.ApiAccessGrant(
+            credential_id=scoped.credential.id,
+            user_id=body.user_id,
+            granted_by_user_id=scoped.user_id,
+        )
+        db.add(existing)
+        db.commit()
+        # the proxy may have already cached a "denied" resolution for this
+        # member's token(s) on this credential — force an immediate re-check
+        invalidate_grant(request.app, scoped.credential.id, body.user_id)
+    user = db.get(models.User, body.user_id)
+    return schemas.GrantOut(
+        user_id=user.id, email=user.email, granted_at=existing.created_at
+    )
+
+
+@router.delete("/{api_id}/grants/{user_id}", status_code=204)
+def revoke_access(
+    user_id: str,
+    request: Request,
+    scoped: ScopedCredential = Depends(_require_team_credential),
+    db: Session = Depends(get_db),
+):
+    grant = db.scalar(
+        select(models.ApiAccessGrant).where(
+            models.ApiAccessGrant.credential_id == scoped.credential.id,
+            models.ApiAccessGrant.user_id == user_id,
+        )
+    )
+    if grant is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Grant not found")
+    db.delete(grant)
+    db.commit()
+    # deny-at-proxy immediately — tokens are kept, re-granting restores them
+    invalidate_grant(request.app, scoped.credential.id, user_id)

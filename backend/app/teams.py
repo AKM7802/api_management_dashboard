@@ -7,7 +7,7 @@ existence, and it's the only place a "personal" user first becomes an
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,10 +21,43 @@ from app.teams_deps import (
     get_team_membership_path,
     require_team_role_path,
 )
+from app.token_cache import invalidate_grant
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
 INVITATION_TTL = timedelta(days=7)
+
+
+def _invalidate_all_team_access(app, db: Session, team_id: str, user_id: str) -> None:
+    """Drop this user's cached tokens across every credential in the team —
+    used when their standing access could have changed for reasons other
+    than an explicit grant revoke (removed from the team, or demoted from
+    admin/owner so their implicit team-wide access no longer applies)."""
+    credential_ids = db.scalars(
+        select(models.ApiCredential.id).where(models.ApiCredential.team_id == team_id)
+    ).all()
+    for credential_id in credential_ids:
+        invalidate_grant(app, credential_id, user_id)
+
+
+def _revoke_all_team_grants(db: Session, team_id: str, user_id: str) -> None:
+    """Delete every ApiAccessGrant this user holds within the team — called
+    on member removal so a stale grant row can't silently keep working (the
+    grant lookup would otherwise still find it even though team membership
+    is gone), and so a future re-invite starts from a clean slate."""
+    credential_ids = db.scalars(
+        select(models.ApiCredential.id).where(models.ApiCredential.team_id == team_id)
+    ).all()
+    if not credential_ids:
+        return
+    grants = db.scalars(
+        select(models.ApiAccessGrant).where(
+            models.ApiAccessGrant.user_id == user_id,
+            models.ApiAccessGrant.credential_id.in_(credential_ids),
+        )
+    ).all()
+    for grant in grants:
+        db.delete(grant)
 
 
 def _team_out(team: models.Team, role: str) -> schemas.TeamOut:
@@ -135,6 +168,7 @@ def list_members(
 def update_member_role(
     user_id: str,
     body: schemas.MemberRoleUpdate,
+    request: Request,
     ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
     db: Session = Depends(get_db),
 ):
@@ -159,8 +193,13 @@ def update_member_role(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Only the owner can change an admin's role"
         )
+    was_admin = target.role in ADMIN_ROLES
     target.role = body.role
     db.commit()
+    if was_admin and body.role == "member":
+        # ex-admin's implicit team-wide access no longer applies — only
+        # explicit grants count now, so drop any cached tokens immediately
+        _invalidate_all_team_access(request.app, db, ctx.team.id, user_id)
     user = db.get(models.User, user_id)
     return schemas.MemberOut(
         user_id=user_id, email=user.email, role=target.role, joined_at=target.created_at
@@ -170,6 +209,7 @@ def update_member_role(
 @router.delete("/{team_id}/members/{user_id}", status_code=204)
 def remove_member(
     user_id: str,
+    request: Request,
     ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
     db: Session = Depends(get_db),
 ):
@@ -191,7 +231,9 @@ def remove_member(
             status.HTTP_403_FORBIDDEN, "Only the owner can remove an admin"
         )
     db.delete(target)
+    _revoke_all_team_grants(db, ctx.team.id, user_id)
     db.commit()
+    _invalidate_all_team_access(request.app, db, ctx.team.id, user_id)
 
 
 # --- invitations (claimable link, no email infra — v1) -----------------------

@@ -16,3 +16,16 @@ def invalidate_credential(app, credential_id: str) -> None:
     cache = app.state.token_cache
     for key in [k for k, v in cache.items() if v.credential_id == credential_id]:
         cache.pop(key, None)
+
+
+def invalidate_grant(app, credential_id: str, user_id: str) -> None:
+    """Drop only one member's cached tokens for one credential (call on grant
+    revoke, member removal, or admin->member demotion — never touches other
+    members' or admins' cached tokens for the same API)."""
+    cache = app.state.token_cache
+    for key in [
+        k
+        for k, v in cache.items()
+        if v.credential_id == credential_id and v.created_by_user_id == user_id
+    ]:
+        cache.pop(key, None)

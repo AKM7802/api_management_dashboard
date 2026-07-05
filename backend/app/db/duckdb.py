@@ -100,10 +100,19 @@ class UsageStore:
         return _utcnow_naive() - td
 
     def stats(
-        self, credential_id: str, since: datetime, interval: str
+        self,
+        credential_id: str,
+        since: datetime,
+        interval: str,
+        user_id: str | None = None,
     ) -> list[dict[str, Any]]:
         if interval not in _INTERVALS:
             raise ValueError(f"interval must be one of {sorted(_INTERVALS)}")
+        params: list[Any] = [credential_id, since]
+        user_filter = ""
+        if user_id is not None:
+            user_filter = "AND user_id = ?"
+            params.append(user_id)
         with self._lock:
             rows = self._conn.execute(
                 f"""
@@ -114,27 +123,34 @@ class UsageStore:
                        sum(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS errors,
                        coalesce(sum(cost_usd), 0)            AS cost_usd
                 FROM usage_logs
-                WHERE credential_id = ? AND ts >= ?
+                WHERE credential_id = ? AND ts >= ? {user_filter}
                 GROUP BY 1 ORDER BY 1
                 """,
-                [credential_id, since],
+                params,
             ).fetchall()
         keys = ("bucket", "requests", "total_tokens", "avg_latency_ms", "errors", "cost_usd")
         return [dict(zip(keys, r)) for r in rows]
 
-    def summary(self, credential_id: str, since: datetime) -> dict[str, Any]:
+    def summary(
+        self, credential_id: str, since: datetime, user_id: str | None = None
+    ) -> dict[str, Any]:
+        params: list[Any] = [credential_id, since]
+        user_filter = ""
+        if user_id is not None:
+            user_filter = "AND user_id = ?"
+            params.append(user_id)
         with self._lock:
             row = self._conn.execute(
-                """
+                f"""
                 SELECT count(*)                        AS requests,
                        coalesce(sum(total_tokens), 0)  AS total_tokens,
                        coalesce(avg(latency_ms), 0)    AS avg_latency_ms,
                        coalesce(sum(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END), 0) AS errors,
                        coalesce(sum(cost_usd), 0)      AS cost_usd
                 FROM usage_logs
-                WHERE credential_id = ? AND ts >= ?
+                WHERE credential_id = ? AND ts >= ? {user_filter}
                 """,
-                [credential_id, since],
+                params,
             ).fetchone()
         requests, total_tokens, avg_latency, errors, cost = row
         return {
@@ -146,7 +162,11 @@ class UsageStore:
         }
 
     def recent_logs(
-        self, credential_id: str, limit: int = 50, before: datetime | None = None
+        self,
+        credential_id: str,
+        limit: int = 50,
+        before: datetime | None = None,
+        user_id: str | None = None,
     ) -> list[dict[str, Any]]:
         query = """
             SELECT ts, path, model, status_code, prompt_tokens, completion_tokens,
@@ -155,6 +175,9 @@ class UsageStore:
             WHERE credential_id = ?
         """
         params: list[Any] = [credential_id]
+        if user_id is not None:
+            query += " AND user_id = ?"
+            params.append(user_id)
         if before is not None:
             query += " AND ts < ?"
             params.append(before)
@@ -166,4 +189,29 @@ class UsageStore:
             "ts", "path", "model", "status_code", "prompt_tokens",
             "completion_tokens", "total_tokens", "latency_ms", "cost_usd",
         )
+        return [dict(zip(keys, r)) for r in rows]
+
+    def usage_by_member(
+        self, credential_ids: list[str], since: datetime
+    ) -> list[dict[str, Any]]:
+        """Per-actor breakdown across one or more credentials — the "monitor
+        individual teammates" view. Admin/owner only; enforced by the caller."""
+        if not credential_ids:
+            return []
+        placeholders = ",".join("?" for _ in credential_ids)
+        with self._lock:
+            rows = self._conn.execute(
+                f"""
+                SELECT user_id,
+                       count(*)                             AS requests,
+                       coalesce(sum(total_tokens), 0)       AS total_tokens,
+                       coalesce(sum(cost_usd), 0)           AS cost_usd,
+                       sum(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS errors
+                FROM usage_logs
+                WHERE credential_id IN ({placeholders}) AND ts >= ?
+                GROUP BY user_id ORDER BY requests DESC
+                """,
+                [*credential_ids, since],
+            ).fetchall()
+        keys = ("user_id", "requests", "total_tokens", "cost_usd", "errors")
         return [dict(zip(keys, r)) for r in rows]
