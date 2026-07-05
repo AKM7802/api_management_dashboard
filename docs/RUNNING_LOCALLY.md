@@ -106,8 +106,9 @@ To create your own account instead, go to **http://localhost:3000/signup**
 
 Once logged in:
 
-1. **Add an API** — click "Add API", choose a provider, enter the base URL and your
-   real upstream key (it's encrypted at rest).
+1. **Add an API** — click "Add API", give it a name, the base URL, and your
+   real upstream key (it's encrypted at rest). There's no provider to pick —
+   any HTTP API works the same way.
 2. **Create a proxy token** — open the API → **Tokens** tab → "Create token".
    Copy the `xpxy_live_...` token shown (it's only shown once).
 3. **Use the proxy** — call the gateway with the proxy token instead of your real key.
@@ -125,11 +126,12 @@ Once logged in:
 
 ### Testing without a real upstream key
 
-You don't need a real OpenAI/Anthropic key to see it work. Point a **custom**
-API at any JSON endpoint you control. There's a ready-made dummy upstream used
-for testing at `scratchpad/mock_upstream.py` — run it and add a "custom" API with
-base URL `http://localhost:9999` (or `http://172.17.0.1:9999` from inside the
-Docker backend container).
+You don't need a real OpenAI/Anthropic key to see it work. Point your API at
+any JSON endpoint you control — nothing about registration is provider-specific.
+There's a ready-made dummy upstream used for testing at
+`scratchpad/mock_upstream.py` — run it and register an API with base URL
+`http://localhost:9999` (or `http://172.17.0.1:9999` from inside the Docker
+backend container).
 
 ---
 

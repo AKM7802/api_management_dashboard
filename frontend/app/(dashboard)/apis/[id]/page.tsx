@@ -82,11 +82,10 @@ export default function ApiDetailPage() {
   const trend = (key: "requests" | "total_tokens" | "cost_usd") =>
     series.data?.map((b) => b[key]) ?? [];
 
-  // "custom" providers are unknown-shaped APIs; only surface LLM-token/cost
-  // metrics once we've actually seen a provider that reports them, or a
-  // known LLM provider (openai/anthropic always report usage).
-  const isLikelyLlm =
-    a.provider !== "custom" || (summary.data?.total_tokens ?? 0) > 0;
+  // registering an API never declares whether it's an LLM — so this is
+  // purely observed: once a response has reported token usage, show the
+  // token/cost metrics; otherwise stay generic (requests/errors only).
+  const isLikelyLlm = (summary.data?.total_tokens ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -177,8 +176,6 @@ export default function ApiDetailPage() {
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-                <dt className="text-muted-foreground">Provider</dt>
-                <dd>{a.provider}</dd>
                 <dt className="text-muted-foreground">Base URL</dt>
                 <dd className="font-mono">{a.base_url}</dd>
                 <dt className="text-muted-foreground">Key</dt>
@@ -195,12 +192,7 @@ export default function ApiDetailPage() {
         </TabsContent>
 
         <TabsContent value="usage" className="pt-4">
-          <UsagePanel
-            apiId={a.id}
-            provider={a.provider}
-            teamId={a.team_id}
-            isAdmin={isAdmin}
-          />
+          <UsagePanel apiId={a.id} teamId={a.team_id} isAdmin={isAdmin} />
         </TabsContent>
 
         {isTeamApi && isAdmin ? (

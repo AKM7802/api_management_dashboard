@@ -5,7 +5,7 @@ const STEPS = [
     n: "01",
     icon: Key,
     title: "Add your API",
-    text: "Paste your upstream key — OpenAI, Anthropic, or any custom base URL. It's encrypted immediately and never shown again.",
+    text: "Name it, point it at any base URL, paste the key — OpenAI, Anthropic, or your own backend, no provider to pick. It's encrypted immediately and never shown again.",
   },
   {
     n: "02",

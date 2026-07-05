@@ -24,9 +24,9 @@ const FEATURES = [
   },
   {
     icon: Layers,
-    title: "Any provider",
+    title: "Any API, no provider lock-in",
     description:
-      "OpenAI and Anthropic work out of the box, or point a token at any custom base URL for your own backend.",
+      "Registering an API is just a name, a base URL, and a key — nothing coupled to OpenAI, Anthropic, or anyone else. Point it at any backend.",
   },
   {
     icon: Radio,

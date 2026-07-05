@@ -76,12 +76,10 @@ function modelBreakdown(logs: UsageLogRow[]) {
 
 export function UsagePanel({
   apiId,
-  provider,
   teamId,
   isAdmin,
 }: {
   apiId: string;
-  provider: string;
   teamId?: string | null;
   isAdmin?: boolean;
 }) {
@@ -98,8 +96,9 @@ export function UsagePanel({
   // visibility doesn't flicker as the user switches the range toggle
   const capability = useStatsSummary(apiId, "30d");
 
-  const isLikelyLlm =
-    provider !== "custom" || (capability.data?.total_tokens ?? 0) > 0;
+  // registering an API never declares whether it's an LLM — purely observed
+  // from whether any response has actually reported token usage
+  const isLikelyLlm = (capability.data?.total_tokens ?? 0) > 0;
   const METRICS = ALL_METRICS.filter((m) => isLikelyLlm || !m.llmOnly);
   // falls back gracefully if the active metric isn't in the filtered list
   // (e.g. capability resolves to non-LLM after an LLM-only tab was selected)

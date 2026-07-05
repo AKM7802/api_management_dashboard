@@ -1,7 +1,5 @@
 // Mirrors backend/app/schemas.py
 
-export type Provider = "openai" | "anthropic" | "custom";
-
 export interface User {
   id: string;
   email: string;
@@ -11,7 +9,6 @@ export interface User {
 export interface ManagedApi {
   id: string;
   name: string;
-  provider: Provider;
   base_url: string;
   secret_last4: string;
   status: "active" | "disabled";

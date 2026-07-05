@@ -216,12 +216,8 @@ export function useApi(id: string) {
 export function useCreateApi() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
-      name: string;
-      provider: string;
-      base_url: string;
-      secret: string;
-    }) => api<ManagedApi>("/apis", { method: "POST", body: JSON.stringify(body) }),
+    mutationFn: (body: { name: string; base_url: string; secret: string }) =>
+      api<ManagedApi>("/apis", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["apis"] }),
   });
 }

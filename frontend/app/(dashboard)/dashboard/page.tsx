@@ -63,11 +63,9 @@ export default function DashboardPage() {
   );
 
   const hasApis = apis.data && apis.data.length > 0;
-  // "custom" providers are unknown-shaped APIs; only surface LLM-token/cost
-  // metrics once we know at least one API is a known LLM provider, or one
-  // has actually reported token usage.
-  const hasTokenData =
-    apis.data?.some((a) => a.provider !== "custom") || aggregate.total_tokens > 0;
+  // registering an API never declares whether it's an LLM — purely observed
+  // from whether any response across the account has reported token usage
+  const hasTokenData = aggregate.total_tokens > 0;
 
   const METRICS = ALL_METRICS.filter((m) => hasTokenData || !m.llmOnly);
   const activeMetric = METRICS.find((m) => m.key === metric) ?? METRICS[0];
@@ -230,7 +228,7 @@ export default function DashboardPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Provider</TableHead>
+                    <TableHead>Base URL</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Requests</TableHead>
                     {hasTokenData ? (
@@ -251,8 +249,8 @@ export default function DashboardPage() {
                             {a.name}
                           </Link>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {a.provider}
+                        <TableCell className="max-w-48 truncate font-mono text-xs text-muted-foreground">
+                          {a.base_url}
                         </TableCell>
                         <TableCell>
                           <Badge variant={a.status === "active" ? "secondary" : "outline"}>
