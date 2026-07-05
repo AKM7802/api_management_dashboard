@@ -28,15 +28,15 @@ import { compactNumber, currency, milliseconds, percent } from "@/lib/format";
 import { useLogs, useStats, useStatsSummary } from "@/lib/queries";
 import type { StatsInterval, StatsRange, UsageLogRow } from "@/lib/types";
 
-const METRICS = [
-  { key: "requests", label: "Requests", color: "var(--chart-1)", format: (n: number) => n.toLocaleString() },
-  { key: "total_tokens", label: "Tokens", color: "var(--chart-2)", format: compactNumber },
-  { key: "cost_usd", label: "Cost", color: "var(--chart-3)", format: currency },
-  { key: "avg_latency_ms", label: "Latency", color: "var(--chart-4)", format: milliseconds },
-  { key: "errors", label: "Errors", color: "var(--chart-5)", format: (n: number) => n.toLocaleString() },
+const ALL_METRICS = [
+  { key: "requests", label: "Requests", color: "var(--chart-1)", format: (n: number) => n.toLocaleString(), llmOnly: false },
+  { key: "total_tokens", label: "LLM Tokens", color: "var(--chart-2)", format: compactNumber, llmOnly: true },
+  { key: "cost_usd", label: "Cost", color: "var(--chart-3)", format: currency, llmOnly: true },
+  { key: "avg_latency_ms", label: "Latency", color: "var(--chart-4)", format: milliseconds, llmOnly: false },
+  { key: "errors", label: "Errors", color: "var(--chart-5)", format: (n: number) => n.toLocaleString(), llmOnly: false },
 ] as const;
 
-type MetricKey = (typeof METRICS)[number]["key"];
+type MetricKey = (typeof ALL_METRICS)[number]["key"];
 
 const STATUS_BUCKETS = [
   { key: "2xx", label: "2xx success", color: "var(--status-good)" },
@@ -69,7 +69,13 @@ function modelBreakdown(logs: UsageLogRow[]) {
     .map(([model, count]) => ({ key: model, label: model, value: count }));
 }
 
-export function UsagePanel({ apiId }: { apiId: string }) {
+export function UsagePanel({
+  apiId,
+  provider,
+}: {
+  apiId: string;
+  provider: string;
+}) {
   const [range, setRange] = useState<StatsRange>("7d");
   const [metric, setMetric] = useState<MetricKey>("requests");
   const interval: StatsInterval = range === "24h" ? "hour" : "day";
@@ -77,8 +83,16 @@ export function UsagePanel({ apiId }: { apiId: string }) {
   const stats = useStats(apiId, range, interval);
   const summary = useStatsSummary(apiId, range);
   const logs = useLogs(apiId, 50);
+  // fixed 30d window, independent of the visible range, so LLM-metric
+  // visibility doesn't flicker as the user switches the range toggle
+  const capability = useStatsSummary(apiId, "30d");
 
-  const activeMetric = METRICS.find((m) => m.key === metric)!;
+  const isLikelyLlm =
+    provider !== "custom" || (capability.data?.total_tokens ?? 0) > 0;
+  const METRICS = ALL_METRICS.filter((m) => isLikelyLlm || !m.llmOnly);
+  // falls back gracefully if the active metric isn't in the filtered list
+  // (e.g. capability resolves to non-LLM after an LLM-only tab was selected)
+  const activeMetric = METRICS.find((m) => m.key === metric) ?? METRICS[0];
   const trend = (key: MetricKey) => stats.data?.map((b) => b[key] as number) ?? [];
   const statuses = logs.data ? statusMix(logs.data) : [];
   const models = logs.data ? modelBreakdown(logs.data) : [];
@@ -97,27 +111,33 @@ export function UsagePanel({ apiId }: { apiId: string }) {
       </div>
 
       {summary.data ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div
+          className={`grid grid-cols-2 gap-3 sm:grid-cols-3 ${isLikelyLlm ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}
+        >
           <KpiCard
             label="Requests"
             value={summary.data.requests.toLocaleString()}
             icon={Zap}
             trend={trend("requests")}
           />
-          <KpiCard
-            label="Tokens"
-            value={compactNumber(summary.data.total_tokens)}
-            icon={Binary}
-            tone="good"
-            trend={trend("total_tokens")}
-          />
-          <KpiCard
-            label="Est. cost"
-            value={currency(summary.data.cost_usd)}
-            icon={DollarSign}
-            tone="warning"
-            trend={trend("cost_usd")}
-          />
+          {isLikelyLlm ? (
+            <>
+              <KpiCard
+                label="LLM Tokens"
+                value={compactNumber(summary.data.total_tokens)}
+                icon={Binary}
+                tone="good"
+                trend={trend("total_tokens")}
+              />
+              <KpiCard
+                label="Est. cost"
+                value={currency(summary.data.cost_usd)}
+                icon={DollarSign}
+                tone="warning"
+                trend={trend("cost_usd")}
+              />
+            </>
+          ) : null}
           <KpiCard
             label="Avg latency"
             value={milliseconds(summary.data.avg_latency_ms)}
@@ -132,7 +152,7 @@ export function UsagePanel({ apiId }: { apiId: string }) {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {[...Array(5)].map((_, i) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
@@ -141,9 +161,9 @@ export function UsagePanel({ apiId }: { apiId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
             <CardTitle className="font-heading">Usage over time</CardTitle>
-            <Tabs value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>
+            <Tabs value={activeMetric.key} onValueChange={(v) => setMetric(v as MetricKey)}>
               <TabsList>
                 {METRICS.map((m) => (
                   <TabsTrigger key={m.key} value={m.key}>
@@ -201,24 +221,26 @@ export function UsagePanel({ apiId }: { apiId: string }) {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-heading">Models used</CardTitle>
-            <p className="text-xs text-muted-foreground">Last {logs.data?.length ?? 0} requests</p>
-          </CardHeader>
-          <CardContent>
-            {logs.isPending ? (
-              <Skeleton className="h-40 w-full" />
-            ) : models.length > 0 ? (
-              <BarList items={models} color="var(--chart-4)" />
-            ) : (
-              <p className="text-sm text-muted-foreground">No requests yet.</p>
-            )}
-          </CardContent>
-        </Card>
+      <div className={`grid gap-4 ${isLikelyLlm ? "lg:grid-cols-3" : ""}`}>
+        {isLikelyLlm ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Models used</CardTitle>
+              <p className="text-xs text-muted-foreground">Last {logs.data?.length ?? 0} requests</p>
+            </CardHeader>
+            <CardContent>
+              {logs.isPending ? (
+                <Skeleton className="h-40 w-full" />
+              ) : models.length > 0 ? (
+                <BarList items={models} color="var(--chart-4)" />
+              ) : (
+                <p className="text-sm text-muted-foreground">No requests yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
 
-        <Card className="lg:col-span-2">
+        <Card className={isLikelyLlm ? "lg:col-span-2" : ""}>
           <CardHeader>
             <CardTitle className="font-heading">Recent requests</CardTitle>
           </CardHeader>
@@ -230,7 +252,9 @@ export function UsagePanel({ apiId }: { apiId: string }) {
                     <TableHead>Time</TableHead>
                     <TableHead>Model</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Tokens</TableHead>
+                    {isLikelyLlm ? (
+                      <TableHead className="text-right">LLM Tokens</TableHead>
+                    ) : null}
                     <TableHead className="text-right">Latency</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -248,9 +272,11 @@ export function UsagePanel({ apiId }: { apiId: string }) {
                       >
                         {r.status_code}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {r.total_tokens.toLocaleString()}
-                      </TableCell>
+                      {isLikelyLlm ? (
+                        <TableCell className="text-right tabular-nums">
+                          {r.total_tokens.toLocaleString()}
+                        </TableCell>
+                      ) : null}
                       <TableCell className="text-right tabular-nums">
                         {r.latency_ms} ms
                       </TableCell>

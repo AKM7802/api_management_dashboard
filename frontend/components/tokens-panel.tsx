@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/code-block";
 import {
   Card,
   CardContent,
@@ -42,16 +43,11 @@ import {
 import { API_URL } from "@/lib/api";
 import { useCreateToken, useRevokeToken, useTokens } from "@/lib/queries";
 
-function CurlSnippet({ token }: { token: string }) {
-  const snippet = `curl ${API_URL}/proxy/v1/chat/completions \\
+function curlFor(token: string) {
+  return `curl ${API_URL}/proxy/v1/chat/completions \\
   -H "Authorization: Bearer ${token}" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'`;
-  return (
-    <pre className="overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs">
-      {snippet}
-    </pre>
-  );
 }
 
 export function TokensPanel({ apiId }: { apiId: string }) {
@@ -85,15 +81,17 @@ export function TokensPanel({ apiId }: { apiId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          Clients use these instead of your real key.
+        <p className="max-w-md text-sm text-muted-foreground">
+          Access tokens authenticate requests to this API — clients use one
+          instead of your real key. Separate from LLM token usage, which is
+          on the Usage tab.
         </p>
         <Dialog
           open={dialogOpen}
           onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}
         >
           <DialogTrigger render={<Button size="sm" />}>
-            Create token
+            Create access token
           </DialogTrigger>
           <DialogContent>
             {createdToken ? (
@@ -113,7 +111,7 @@ export function TokensPanel({ apiId }: { apiId: string }) {
                       Copy
                     </Button>
                   </div>
-                  <CurlSnippet token={createdToken} />
+                  <CodeBlock code={curlFor(createdToken)} label="request.sh" />
                 </div>
                 <DialogFooter>
                   <Button onClick={closeDialog}>I&apos;ve saved it</Button>
@@ -122,7 +120,7 @@ export function TokensPanel({ apiId }: { apiId: string }) {
             ) : (
               <>
                 <DialogHeader>
-                  <DialogTitle>Create proxy token</DialogTitle>
+                  <DialogTitle>Create access token</DialogTitle>
                   <DialogDescription>
                     Name it after the app or service that will use it.
                   </DialogDescription>
@@ -159,7 +157,7 @@ export function TokensPanel({ apiId }: { apiId: string }) {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Token</TableHead>
+              <TableHead>Access token</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last used</TableHead>
               <TableHead />
@@ -207,10 +205,9 @@ export function TokensPanel({ apiId }: { apiId: string }) {
       ) : (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>No tokens yet</EmptyTitle>
+            <EmptyTitle>No access tokens yet</EmptyTitle>
             <EmptyDescription>
-              Create a proxy token to start routing requests through the
-              gateway.
+              Create one to start routing requests through the gateway.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -220,12 +217,12 @@ export function TokensPanel({ apiId }: { apiId: string }) {
         <CardHeader>
           <CardTitle>How to use</CardTitle>
           <CardDescription>
-            Call the proxy with your token — the real key is injected
+            Call the proxy with your access token — the real key is injected
             server-side.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CurlSnippet token="xpxy_live_..." />
+          <CodeBlock code={curlFor("xpxy_live_...")} label="example.sh" />
         </CardContent>
       </Card>
     </div>

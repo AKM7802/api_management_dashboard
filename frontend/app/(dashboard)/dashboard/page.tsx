@@ -39,18 +39,18 @@ import { compactNumber, currency, percent } from "@/lib/format";
 import { useAllApiStats, useApis } from "@/lib/queries";
 import type { StatsRange } from "@/lib/types";
 
-const METRICS = [
-  { key: "requests" as const, label: "Requests", format: (n: number) => n.toLocaleString() },
-  { key: "total_tokens" as const, label: "Tokens", format: compactNumber },
-  { key: "cost_usd" as const, label: "Cost", format: currency },
-  { key: "errors" as const, label: "Errors", format: (n: number) => n.toLocaleString() },
+const ALL_METRICS = [
+  { key: "requests" as const, label: "Requests", format: (n: number) => n.toLocaleString(), llmOnly: false },
+  { key: "total_tokens" as const, label: "LLM Tokens", format: compactNumber, llmOnly: true },
+  { key: "cost_usd" as const, label: "Cost", format: currency, llmOnly: true },
+  { key: "errors" as const, label: "Errors", format: (n: number) => n.toLocaleString(), llmOnly: false },
 ];
 
 const DONUT_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
 
 export default function DashboardPage() {
   const [range, setRange] = useState<StatsRange>("7d");
-  const [metric, setMetric] = useState<(typeof METRICS)[number]["key"]>("requests");
+  const [metric, setMetric] = useState<(typeof ALL_METRICS)[number]["key"]>("requests");
 
   const apis = useApis();
   const { isPending, interval, perApi, mergedSeries, aggregate } = useAllApiStats(
@@ -59,6 +59,14 @@ export default function DashboardPage() {
   );
 
   const hasApis = apis.data && apis.data.length > 0;
+  // "custom" providers are unknown-shaped APIs; only surface LLM-token/cost
+  // metrics once we know at least one API is a known LLM provider, or one
+  // has actually reported token usage.
+  const hasTokenData =
+    apis.data?.some((a) => a.provider !== "custom") || aggregate.total_tokens > 0;
+
+  const METRICS = ALL_METRICS.filter((m) => hasTokenData || !m.llmOnly);
+  const activeMetric = METRICS.find((m) => m.key === metric) ?? METRICS[0];
 
   const requestsTrend = mergedSeries.map((b) => b.requests);
   const tokensTrend = mergedSeries.map((b) => b.total_tokens);
@@ -82,19 +90,29 @@ export default function DashboardPage() {
       [],
     );
 
-  const topByTokens = [...perApi]
-    .sort((a, b) => (b.summary?.total_tokens ?? 0) - (a.summary?.total_tokens ?? 0))
+  // rank by tokens when we have LLM data, otherwise fall back to requests —
+  // keeps this card useful for accounts with only non-LLM APIs
+  const topApis = [...perApi]
+    .sort((a, b) => {
+      const key = hasTokenData ? "total_tokens" : "requests";
+      return (b.summary?.[key] ?? 0) - (a.summary?.[key] ?? 0);
+    })
     .slice(0, 6)
-    .filter((p) => (p.summary?.total_tokens ?? 0) > 0)
-    .map((p) => ({
-      key: p.api.id,
-      label: p.api.name,
-      value: p.summary?.total_tokens ?? 0,
-      formattedValue: compactNumber(p.summary?.total_tokens ?? 0),
-    }));
+    .filter((p) => (hasTokenData ? p.summary?.total_tokens : p.summary?.requests))
+    .map((p) => {
+      const value = hasTokenData
+        ? (p.summary?.total_tokens ?? 0)
+        : (p.summary?.requests ?? 0);
+      return {
+        key: p.api.id,
+        label: p.api.name,
+        value,
+        formattedValue: hasTokenData ? compactNumber(value) : value.toLocaleString(),
+      };
+    });
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
@@ -104,7 +122,7 @@ export default function DashboardPage() {
             Usage across all of your APIs.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Tabs value={range} onValueChange={(v) => setRange(v as StatsRange)}>
             <TabsList>
               <TabsTrigger value="24h">24h</TabsTrigger>
@@ -125,7 +143,7 @@ export default function DashboardPage() {
             <EmptyTitle>Add your first API</EmptyTitle>
             <EmptyDescription>
               Connect an upstream API (OpenAI, Anthropic, or any custom base
-              URL), then mint a proxy token to use instead of the real key.
+              URL), then mint an access token to use instead of the real key.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -134,9 +152,13 @@ export default function DashboardPage() {
         </Empty>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div
+            className={`grid grid-cols-2 gap-3 sm:grid-cols-3 ${hasTokenData ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}
+          >
             {isPending ? (
-              [...Array(5)].map((_, i) => <Skeleton key={i} className="h-32 w-full" />)
+              [...Array(hasTokenData ? 5 : 3)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))
             ) : (
               <>
                 <KpiCard
@@ -145,20 +167,24 @@ export default function DashboardPage() {
                   icon={Zap}
                   trend={requestsTrend}
                 />
-                <KpiCard
-                  label="Tokens"
-                  value={compactNumber(aggregate.total_tokens)}
-                  icon={Binary}
-                  tone="good"
-                  trend={tokensTrend}
-                />
-                <KpiCard
-                  label="Est. cost"
-                  value={currency(aggregate.cost_usd)}
-                  icon={DollarSign}
-                  tone="warning"
-                  trend={costTrend}
-                />
+                {hasTokenData ? (
+                  <>
+                    <KpiCard
+                      label="LLM Tokens"
+                      value={compactNumber(aggregate.total_tokens)}
+                      icon={Binary}
+                      tone="good"
+                      trend={tokensTrend}
+                    />
+                    <KpiCard
+                      label="Est. cost"
+                      value={currency(aggregate.cost_usd)}
+                      icon={DollarSign}
+                      tone="warning"
+                      trend={costTrend}
+                    />
+                  </>
+                ) : null}
                 <KpiCard
                   label="Error rate"
                   value={percent(aggregate.error_rate)}
@@ -174,11 +200,71 @@ export default function DashboardPage() {
             )}
           </div>
 
+          <Card>
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+              <CardTitle className="font-heading">Your APIs</CardTitle>
+              <Button variant="outline" size="sm" render={<Link href="/apis/new" />}>
+                <Plus data-icon="inline-start" />
+                Add API
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Requests</TableHead>
+                    {hasTokenData ? (
+                      <TableHead className="text-right">LLM Tokens</TableHead>
+                    ) : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {apis.data?.map((a) => {
+                    const stats = perApi.find((p) => p.api.id === a.id);
+                    return (
+                      <TableRow key={a.id}>
+                        <TableCell>
+                          <Link
+                            className="font-medium underline-offset-4 hover:underline"
+                            href={`/apis/${a.id}`}
+                          >
+                            {a.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {a.provider}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={a.status === "active" ? "secondary" : "outline"}>
+                            {a.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {stats?.summary ? stats.summary.requests.toLocaleString() : "—"}
+                        </TableCell>
+                        {hasTokenData ? (
+                          <TableCell className="text-right tabular-nums">
+                            {stats?.summary
+                              ? compactNumber(stats.summary.total_tokens)
+                              : "—"}
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
-              <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
                 <CardTitle className="font-heading">Usage over time</CardTitle>
-                <Tabs value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
+                <Tabs value={activeMetric.key} onValueChange={(v) => setMetric(v as typeof metric)}>
                   <TabsList>
                     {METRICS.map((m) => (
                       <TabsTrigger key={m.key} value={m.key}>
@@ -195,14 +281,14 @@ export default function DashboardPage() {
                   <TimeSeriesChart
                     data={mergedSeries}
                     interval={interval}
-                    integerYAxis={metric !== "cost_usd"}
+                    integerYAxis={activeMetric.key !== "cost_usd"}
                     series={[
                       {
-                        key: metric,
-                        label: METRICS.find((m) => m.key === metric)!.label,
+                        key: activeMetric.key,
+                        label: activeMetric.label,
                         color:
-                          metric === "errors" ? "var(--chart-5)" : "var(--chart-1)",
-                        format: METRICS.find((m) => m.key === metric)!.format,
+                          activeMetric.key === "errors" ? "var(--chart-5)" : "var(--chart-1)",
+                        format: activeMetric.format,
                       },
                     ]}
                   />
@@ -214,85 +300,42 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Requests by API</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isPending ? (
-                  <Skeleton className="h-48 w-full" />
-                ) : donutData.length > 0 ? (
-                  <DonutChart data={donutData} centerLabel="requests" height={180} />
-                ) : (
-                  <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                    No requests yet.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+            <div className="flex flex-col gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-heading">Requests by API</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isPending ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : donutData.length > 0 ? (
+                    <DonutChart data={donutData} centerLabel="requests" height={150} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No requests yet.</p>
+                  )}
+                </CardContent>
+              </Card>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="font-heading">Top APIs by tokens</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isPending ? (
-                  <Skeleton className="h-40 w-full" />
-                ) : topByTokens.length > 0 ? (
-                  <BarList items={topByTokens} color="var(--chart-2)" />
-                ) : (
-                  <p className="text-sm text-muted-foreground">No usage yet.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="font-heading">Your APIs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Requests</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {apis.data?.map((a) => {
-                      const stats = perApi.find((p) => p.api.id === a.id);
-                      return (
-                        <TableRow key={a.id}>
-                          <TableCell>
-                            <Link
-                              className="font-medium underline-offset-4 hover:underline"
-                              href={`/apis/${a.id}`}
-                            >
-                              {a.name}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {a.provider}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={a.status === "active" ? "secondary" : "outline"}>
-                              {a.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {stats?.summary ? stats.summary.requests.toLocaleString() : "—"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-heading">
+                    Top APIs by {hasTokenData ? "tokens" : "requests"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isPending ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : topApis.length > 0 ? (
+                    <BarList
+                      items={topApis}
+                      color={hasTokenData ? "var(--chart-2)" : "var(--chart-1)"}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No usage yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </>
       )}

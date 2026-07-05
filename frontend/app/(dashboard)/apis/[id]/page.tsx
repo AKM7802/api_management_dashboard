@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Binary, DollarSign, Zap } from "lucide-react";
+import { AlertTriangle, Binary, DollarSign, KeyRound, Zap } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -74,6 +74,12 @@ export default function ApiDetailPage() {
   const trend = (key: "requests" | "total_tokens" | "cost_usd") =>
     series.data?.map((b) => b[key]) ?? [];
 
+  // "custom" providers are unknown-shaped APIs; only surface LLM-token/cost
+  // metrics once we've actually seen a provider that reports them, or a
+  // known LLM provider (openai/anthropic always report usage).
+  const isLikelyLlm =
+    a.provider !== "custom" || (summary.data?.total_tokens ?? 0) > 0;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -98,33 +104,42 @@ export default function ApiDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="tokens">Tokens</TabsTrigger>
+          <TabsTrigger value="tokens">
+            <KeyRound data-icon="inline-start" />
+            Access Tokens
+          </TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="flex flex-col gap-4 pt-4">
           {summary.data ? (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div
+              className={`grid grid-cols-2 gap-3 ${isLikelyLlm ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+            >
               <KpiCard
                 label="Requests (30d)"
                 value={summary.data.requests.toLocaleString()}
                 icon={Zap}
                 trend={trend("requests")}
               />
-              <KpiCard
-                label="Tokens (30d)"
-                value={compactNumber(summary.data.total_tokens)}
-                icon={Binary}
-                tone="good"
-                trend={trend("total_tokens")}
-              />
-              <KpiCard
-                label="Est. cost"
-                value={currency(summary.data.cost_usd)}
-                icon={DollarSign}
-                tone="warning"
-                trend={trend("cost_usd")}
-              />
+              {isLikelyLlm ? (
+                <>
+                  <KpiCard
+                    label="LLM Tokens (30d)"
+                    value={compactNumber(summary.data.total_tokens)}
+                    icon={Binary}
+                    tone="good"
+                    trend={trend("total_tokens")}
+                  />
+                  <KpiCard
+                    label="Est. cost"
+                    value={currency(summary.data.cost_usd)}
+                    icon={DollarSign}
+                    tone="warning"
+                    trend={trend("cost_usd")}
+                  />
+                </>
+              ) : null}
               <KpiCard
                 label="Error rate"
                 value={percent(summary.data.error_rate)}
@@ -164,7 +179,7 @@ export default function ApiDetailPage() {
         </TabsContent>
 
         <TabsContent value="usage" className="pt-4">
-          <UsagePanel apiId={a.id} />
+          <UsagePanel apiId={a.id} provider={a.provider} />
         </TabsContent>
       </Tabs>
     </div>
