@@ -40,11 +40,10 @@ def _load_pending_invite(db: Session, token: str) -> models.TeamInvitation:
 
 
 @router.get("/{token}", response_model=schemas.InvitationPreview)
-def preview_invitation(
-    token: str,
-    db: Session = Depends(get_db),
-    _user: models.User = Depends(get_current_user),
-):
+def preview_invitation(token: str, db: Session = Depends(get_db)):
+    # deliberately public (no auth): the whole point is to show someone who
+    # hasn't logged in yet which team/role they're being invited to, before
+    # they decide whether to log in or sign up to accept it
     invite = _load_pending_invite(db, token)
     team = db.get(models.Team, invite.team_id)
     return schemas.InvitationPreview(

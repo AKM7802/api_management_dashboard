@@ -24,6 +24,12 @@ def test_invite_and_accept_happy_path(client):
         "team_name": team["name"], "role": "member", "email": "invitee@x.com",
     }
 
+    # must also work with NO auth at all — the whole point is letting someone
+    # who hasn't logged in yet see what they're being invited to
+    anon_preview = client.get(f"/invitations/{invite['token']}")
+    assert anon_preview.status_code == 200
+    assert anon_preview.json() == preview.json()
+
     r = client.post(
         "/invitations/accept", json={"token": invite["token"]}, headers=invitee_headers
     )
