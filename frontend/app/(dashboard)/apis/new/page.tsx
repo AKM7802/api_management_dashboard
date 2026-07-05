@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -198,7 +199,8 @@ export default function NewApiPage() {
 
   if (role === "member") {
     return (
-      <div className="mx-auto w-full max-w-lg">
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
+        <BackLink href="/dashboard" label="Back to dashboard" />
         <Card>
           <CardHeader>
             <CardTitle>Members can&apos;t add APIs</CardTitle>
@@ -217,7 +219,8 @@ export default function NewApiPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
+      <BackLink href="/dashboard" label="Back to dashboard" />
       <Card>
         <CardHeader>
           <CardTitle>Add an API</CardTitle>

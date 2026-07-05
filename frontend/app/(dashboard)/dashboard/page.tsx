@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TeamMembersPanel } from "@/components/team-members-panel";
 import { compactNumber, currency, percent } from "@/lib/format";
 import { useActiveMembership, useAllApiStats, useApis } from "@/lib/queries";
 import type { StatsRange } from "@/lib/types";
@@ -74,7 +75,11 @@ export default function DashboardPage() {
     useState<(typeof ALL_METRICS)[number]["key"]>("requests");
 
   const apis = useApis();
-  const { role } = useActiveMembership();
+  const { role, team } = useActiveMembership();
+  const [section, setSection] = useState<"overview" | "members">("overview");
+  const isTeamContext = !!team;
+  const isTeamAdmin = role === "owner" || role === "admin";
+  const isTeamOwner = role === "owner";
   // in Personal mode role is null (owner-equivalent); in Team mode only
   // owner/admin may add APIs — a member's dashboard is read-only
   const canManageApis = role === null || role === "owner" || role === "admin";
@@ -152,32 +157,54 @@ export default function DashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Overview
+            {section === "members" && isTeamContext ? team.name : "Overview"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {role === "member"
-              ? "Usage for the APIs you've been granted."
-              : "Usage across all of your APIs."}
+            {section === "members" && isTeamContext
+              ? "Members, invitations, and per-member usage for this team."
+              : role === "member"
+                ? "Usage for the APIs you've been granted."
+                : "Usage across all of your APIs."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Tabs value={range} onValueChange={(v) => setRange(v as StatsRange)}>
-            <TabsList>
-              <TabsTrigger value="24h">24h</TabsTrigger>
-              <TabsTrigger value="7d">7d</TabsTrigger>
-              <TabsTrigger value="30d">30d</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {canManageApis ? (
-            <Button render={<Link href="/apis/new" />} nativeButton={false}>
-              <Plus data-icon="inline-start" />
-              Add API
-            </Button>
-          ) : null}
-        </div>
+        {section === "overview" || !isTeamContext ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Tabs value={range} onValueChange={(v) => setRange(v as StatsRange)}>
+              <TabsList>
+                <TabsTrigger value="24h">24h</TabsTrigger>
+                <TabsTrigger value="7d">7d</TabsTrigger>
+                <TabsTrigger value="30d">30d</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {canManageApis ? (
+              <Button render={<Link href="/apis/new" />} nativeButton={false}>
+                <Plus data-icon="inline-start" />
+                Add API
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
-      {!hasApis && !apis.isPending ? (
+      {isTeamContext ? (
+        <Tabs
+          value={section}
+          onValueChange={(v) => setSection(v as typeof section)}
+        >
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : null}
+
+      {section === "members" && isTeamContext ? (
+        <TeamMembersPanel
+          teamId={team.id}
+          isAdmin={isTeamAdmin}
+          isOwner={isTeamOwner}
+        />
+      ) : !hasApis && !apis.isPending ? (
         <Empty>
           <EmptyHeader>
             <EmptyTitle>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { AccessPanel } from "@/components/access-panel";
+import { BackLink } from "@/components/back-link";
 import { KpiCard } from "@/components/kpi-card";
 import { TokensPanel } from "@/components/tokens-panel";
 import { UsagePanel } from "@/components/usage-panel";
@@ -47,6 +48,7 @@ export default function ApiDetailPage() {
   if (api.isPending) {
     return (
       <div className="flex flex-col gap-4">
+        <BackLink href="/dashboard" label="Back to dashboard" />
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-48 w-full" />
       </div>
@@ -89,6 +91,7 @@ export default function ApiDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackLink href="/dashboard" label="Back to dashboard" />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">

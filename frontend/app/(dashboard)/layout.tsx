@@ -33,7 +33,8 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const me = useMe();
-  const { team } = useActiveMembership();
+  const { team, role } = useActiveMembership();
+  const isTeamAdmin = role === "owner" || role === "admin";
 
   // client-side guard: no token → login
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function DashboardLayout({
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    {team ? (
+                    {team && isTeamAdmin ? (
                       <DropdownMenuItem
                         onClick={() => router.push(`/teams/${team.id}`)}
                       >
