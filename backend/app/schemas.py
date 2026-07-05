@@ -58,6 +58,7 @@ class ApiOut(BaseModel):
     secret_last4: str
     status: str
     created_at: datetime
+    team_id: str | None = None
 
 
 # --- proxy tokens ---------------------------------------------------------------

@@ -65,3 +65,34 @@ def wait_for_logs(client, headers, api_id: str, n: int = 1, timeout: float = 3.0
             return rows
         time.sleep(0.05)
     raise AssertionError(f"expected {n} usage log rows, got {len(rows)}")
+
+
+# --- teams / RBAC helpers -----------------------------------------------------
+
+
+def whoami(client, headers) -> dict:
+    r = client.get("/auth/me", headers=headers)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def create_team(client, headers, name="Test Team") -> dict:
+    r = client.post("/teams", json={"name": name}, headers=headers)
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def team_headers(headers: dict, team_id: str) -> dict:
+    return {**headers, "X-Team-Id": team_id}
+
+
+def add_member_directly(team_id: str, user_id: str, role: str = "member") -> None:
+    """Insert a TeamMembership row straight into the DB, bypassing the invite
+    flow (Phase 2) — the invite/accept path itself is covered separately in
+    test_invitations.py; most RBAC/grant tests just need a member present."""
+    from app import models
+    from app.db.postgres import SessionLocal
+
+    with SessionLocal() as db:
+        db.add(models.TeamMembership(team_id=team_id, user_id=user_id, role=role))
+        db.commit()

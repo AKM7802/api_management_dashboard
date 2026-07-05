@@ -6,7 +6,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import apis, auth, proxy, tokens, usage
+from app import apis, auth, proxy, teams, tokens, usage
 from app.config import get_settings
 from app.db.postgres import init_db
 
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(auth.router)
+    app.include_router(teams.router)
     app.include_router(apis.router)
     app.include_router(tokens.router)
     app.include_router(usage.router)
