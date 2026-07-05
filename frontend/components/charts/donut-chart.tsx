@@ -73,7 +73,15 @@ export function DonutChart({
                 <Cell key={d.key} fill={d.color} />
               ))}
             </Pie>
-            <Tooltip content={<DonutTooltip total={total} />} />
+            <Tooltip
+              content={<DonutTooltip total={total} />}
+              // pin above the ring (x still tracks the cursor) -- left at
+              // the recharts default, the tooltip renders wherever the
+              // cursor is, which for a donut lands right on top of the
+              // centered total label and makes both unreadable
+              position={{ y: 0 }}
+              wrapperStyle={{ zIndex: 10 }}
+            />
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
