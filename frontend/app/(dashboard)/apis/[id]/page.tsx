@@ -1,9 +1,10 @@
 "use client";
 
+import { AlertTriangle, Binary, DollarSign, Zap } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { StatCard } from "@/components/stat-card";
+import { KpiCard } from "@/components/kpi-card";
 import { TokensPanel } from "@/components/tokens-panel";
 import { UsagePanel } from "@/components/usage-panel";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +23,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { compactNumber, currency, percent } from "@/lib/format";
 import {
   useApi,
   useDeleteApi,
+  useStats,
   useStatsSummary,
   useUpdateApi,
 } from "@/lib/queries";
@@ -36,6 +39,7 @@ export default function ApiDetailPage() {
   const update = useUpdateApi(id);
   const del = useDeleteApi();
   const summary = useStatsSummary(id, "30d");
+  const series = useStats(id, "30d", "day");
 
   if (api.isPending) {
     return (
@@ -67,11 +71,16 @@ export default function ApiDetailPage() {
     });
   }
 
+  const trend = (key: "requests" | "total_tokens" | "cost_usd") =>
+    series.data?.map((b) => b[key]) ?? [];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">{a.name}</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            {a.name}
+          </h1>
           <Badge variant={a.status === "active" ? "secondary" : "outline"}>
             {a.status}
           </Badge>
@@ -95,34 +104,44 @@ export default function ApiDetailPage() {
 
         <TabsContent value="overview" className="flex flex-col gap-4 pt-4">
           {summary.data ? (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <StatCard
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <KpiCard
                 label="Requests (30d)"
                 value={summary.data.requests.toLocaleString()}
+                icon={Zap}
+                trend={trend("requests")}
               />
-              <StatCard
+              <KpiCard
                 label="Tokens (30d)"
-                value={summary.data.total_tokens.toLocaleString()}
+                value={compactNumber(summary.data.total_tokens)}
+                icon={Binary}
+                tone="good"
+                trend={trend("total_tokens")}
               />
-              <StatCard
-                label="Error rate"
-                value={`${(summary.data.error_rate * 100).toFixed(1)}%`}
-              />
-              <StatCard
+              <KpiCard
                 label="Est. cost"
-                value={`$${summary.data.cost_usd.toFixed(4)}`}
+                value={currency(summary.data.cost_usd)}
+                icon={DollarSign}
+                tone="warning"
+                trend={trend("cost_usd")}
+              />
+              <KpiCard
+                label="Error rate"
+                value={percent(summary.data.error_rate)}
+                icon={AlertTriangle}
+                tone={summary.data.error_rate > 0.05 ? "critical" : "default"}
               />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full" />
+                <Skeleton key={i} className="h-32 w-full" />
               ))}
             </div>
           )}
           <Card>
             <CardHeader>
-              <CardTitle>Details</CardTitle>
+              <CardTitle className="font-heading">Details</CardTitle>
               <CardDescription>Upstream configuration</CardDescription>
             </CardHeader>
             <CardContent>

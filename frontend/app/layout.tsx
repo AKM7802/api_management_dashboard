@@ -1,23 +1,32 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fontBody = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontDisplay = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const fontCode = JetBrains_Mono({
+  variable: "--font-code",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: { default: "API Manager", template: "%s | API Manager" },
+  title: {
+    default: "API Manager — one gateway for every API key",
+    template: "%s | API Manager",
+  },
   description:
-    "Manage your API keys in one place. Safe proxy tokens, per-API usage analytics.",
+    "Manage your API keys in one place. Get safe proxy tokens instead of sharing real keys, and see exactly how each API is being used — requests, tokens, latency, cost, and errors.",
 };
 
 export default function RootLayout({
@@ -28,7 +37,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${fontBody.variable} ${fontDisplay.variable} ${fontCode.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,6 +20,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearToken, getToken } from "@/lib/api";
 import { useMe } from "@/lib/queries";
+
+function initials(email: string) {
+  return email.slice(0, 2).toUpperCase();
+}
 
 export default function DashboardLayout({
   children,
@@ -37,33 +44,40 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
-          <Link href="/dashboard" className="font-semibold">
-            API Manager
+    <div className="flex min-h-svh flex-col bg-muted/20">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <Link href="/dashboard" aria-label="Dashboard home">
+            <Logo />
           </Link>
-          {me.isPending ? (
-            <Skeleton className="h-8 w-24" />
-          ) : me.data ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={<Button variant="ghost" size="sm" />}
-              >
-                {me.data.email}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {me.isPending ? (
+              <Skeleton className="size-8 rounded-full" />
+            ) : me.data ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full" />}>
+                  <Avatar className="size-8">
+                    <AvatarFallback className="text-xs">
+                      {initials(me.data.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
+                    {me.data.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
         {children}
       </main>
     </div>
