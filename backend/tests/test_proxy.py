@@ -1,6 +1,7 @@
 """Full proxy loop against a mock upstream (in-process ASGI app)."""
 
 import json
+import time
 
 import httpx
 import pytest
@@ -180,6 +181,49 @@ def test_proxy_rejects_revoked_token_and_disabled_api(proxied):
         headers={"Authorization": f"Bearer {token2['token']}"},
     )
     assert r.status_code == 403
+
+
+def test_rejections_against_a_real_credential_are_logged(proxied):
+    """Revoked-token reuse and disabled-API hits are real security signal —
+    they must show up in that API's usage log with their real status code,
+    not vanish silently before the request ever reaches the upstream."""
+    headers, api, raw = _setup(proxied)
+    token_id = proxied.get(f"/apis/{api['id']}/tokens", headers=headers).json()[0]["id"]
+
+    proxied.delete(f"/tokens/{token_id}", headers=headers)
+    proxied.post(
+        "/proxy/v1/chat/completions",
+        json={},
+        headers={"Authorization": f"Bearer {raw}"},
+    )
+    row = wait_for_logs(proxied, headers, api["id"])[0]
+    assert row["status_code"] == 401
+
+    token2 = create_token(proxied, headers, api["id"])
+    proxied.patch(f"/apis/{api['id']}", json={"status": "disabled"}, headers=headers)
+    proxied.post(
+        "/proxy/v1/chat/completions",
+        json={},
+        headers={"Authorization": f"Bearer {token2['token']}"},
+    )
+    rows = wait_for_logs(proxied, headers, api["id"], n=2)
+    assert rows[0]["status_code"] == 403  # newest first
+
+
+def test_unattributable_requests_are_not_logged(proxied):
+    """A garbage/unknown token has no real credential behind it — nothing to
+    attach a usage row to, so (unlike the case above) it must not be logged."""
+    headers, api, _raw = _setup(proxied)
+
+    proxied.post("/proxy/v1/chat/completions", json={})
+    proxied.post(
+        "/proxy/v1/chat/completions",
+        json={},
+        headers={"Authorization": "Bearer xpxy_live_unknown0000"},
+    )
+    time.sleep(0.2)  # let the flush loop run so a false pass isn't just a race
+    logs = proxied.get(f"/apis/{api['id']}/logs", headers=headers).json()
+    assert logs == []
 
 
 def test_proxy_get_passthrough(proxied):

@@ -106,37 +106,24 @@ def _auth_headers(provider: str, secret: str, incoming: dict[str, str]) -> dict[
     include_in_schema=False,
 )
 async def proxy(path: str, request: Request):
-    # 1. proxy-token auth
+    started = time.monotonic()
+
+    # 1. proxy-token auth. Cheap fail-fast for garbage/unknown tokens: no
+    # body read, no usage-log row — there's no real credential to attribute
+    # the event to (this is unauthenticated noise, not API activity).
     auth = request.headers.get("authorization", "")
     if not auth.startswith("Bearer " + PROXY_TOKEN_PREFIX):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing or invalid proxy token")
     resolved = await _resolve_token(request, hash_token(auth.removeprefix("Bearer ")))
-    if resolved is None or resolved.token_status != "active":
+    if resolved is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown or revoked proxy token")
-    if resolved.credential_status != "active":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "This API is disabled")
 
-    # 2. decrypt the real key in memory only
-    try:
-        secret = decrypt_secret(resolved.encrypted_secret)
-    except ValueError:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Credential unavailable")
-
-    # 3. build the upstream request (real key injected, client auth stripped)
+    # From here the token maps to a real credential, so every outcome from
+    # this point on — including rejections — is logged with its real status
+    # code. Dashboards (error rate, status mix) would otherwise be blind to
+    # revoked-token reuse, disabled APIs, and credential failures.
     body = await request.body()
-    headers = {
-        k: v
-        for k, v in request.headers.items()
-        if k.lower() not in _SKIP_REQUEST_HEADERS
-    }
-    headers.update(_auth_headers(resolved.provider, secret, dict(request.headers)))
-    url = f"{resolved.base_url}/{path.lstrip('/')}"
-    if request.url.query:
-        url += f"?{request.url.query}"
-
-    client: httpx.AsyncClient = request.app.state.http_client
     model = extract_model(body)
-    started = time.monotonic()
 
     def _log(status_code: int, content_type: str = "", head: bytes = b"", tail: bytes = b""):
         prompt, completion = extract_usage(content_type, head, tail)
@@ -154,6 +141,33 @@ async def proxy(path: str, request: Request):
                 cost_usd=estimate_cost(resolved.provider, model, prompt, completion),
             )
         )
+
+    if resolved.token_status != "active":
+        _log(status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown or revoked proxy token")
+    if resolved.credential_status != "active":
+        _log(status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This API is disabled")
+
+    # 2. decrypt the real key in memory only
+    try:
+        secret = decrypt_secret(resolved.encrypted_secret)
+    except ValueError:
+        _log(status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Credential unavailable")
+
+    # 3. build the upstream request (real key injected, client auth stripped)
+    headers = {
+        k: v
+        for k, v in request.headers.items()
+        if k.lower() not in _SKIP_REQUEST_HEADERS
+    }
+    headers.update(_auth_headers(resolved.provider, secret, dict(request.headers)))
+    url = f"{resolved.base_url}/{path.lstrip('/')}"
+    if request.url.query:
+        url += f"?{request.url.query}"
+
+    client: httpx.AsyncClient = request.app.state.http_client
 
     # 4. dispatch upstream
     try:
