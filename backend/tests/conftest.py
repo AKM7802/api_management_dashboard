@@ -37,8 +37,7 @@ def signup(client, email="user@example.com", password="password123") -> dict:
 
 def create_api(client, headers, **overrides) -> dict:
     payload = {
-        "name": "My OpenAI",
-        "provider": "openai",
+        "name": "My API",
         "base_url": "http://upstream",
         "secret": "sk-real-secret-key-9876",
     }

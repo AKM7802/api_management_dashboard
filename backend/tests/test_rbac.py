@@ -23,10 +23,7 @@ def test_member_cannot_create_team_api(client):
     _owner, team, member_headers, _mid = _team_with_member(client, "member")
     r = client.post(
         "/apis",
-        json={
-            "name": "x", "provider": "custom", "base_url": "http://x",
-            "secret": "sk-x",
-        },
+        json={"name": "x", "base_url": "http://x", "secret": "sk-x"},
         headers=team_headers(member_headers, team["id"]),
     )
     assert r.status_code == 403

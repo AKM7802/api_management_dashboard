@@ -43,7 +43,6 @@ class ResolvedToken:
     credential_id: str
     created_by_user_id: str
     team_id: str | None
-    provider: str
     base_url: str
     encrypted_secret: bytes
     token_status: str
@@ -92,7 +91,6 @@ def _load_token(token_hash: str) -> ResolvedToken | None:
             credential_id=cred.id,
             created_by_user_id=creator_id,
             team_id=cred.team_id,
-            provider=cred.provider,
             base_url=cred.base_url,
             encrypted_secret=cred.encrypted_secret,
             token_status=token.status,
@@ -117,15 +115,16 @@ async def _resolve_token(request: Request, token_hash: str) -> ResolvedToken | N
     return resolved
 
 
-def _auth_headers(provider: str, secret: str, incoming: dict[str, str]) -> dict[str, str]:
-    if provider == "anthropic":
-        headers = {"x-api-key": secret}
-        headers.setdefault(
-            "anthropic-version", incoming.get("anthropic-version", "2023-06-01")
-        )
-        return headers
-    # openai + custom default to bearer auth
-    return {"Authorization": f"Bearer {secret}"}
+def _auth_headers(secret: str, incoming: dict[str, str]) -> dict[str, str]:
+    """Provider-agnostic key injection: registering an API never asks which
+    upstream it is, so the secret is offered via every auth convention an
+    upstream might look for. Extra headers an upstream doesn't recognize are
+    simply ignored by it, so this is safe to send unconditionally."""
+    return {
+        "Authorization": f"Bearer {secret}",
+        "x-api-key": secret,
+        "anthropic-version": incoming.get("anthropic-version", "2023-06-01"),
+    }
 
 
 @router.api_route(
@@ -166,7 +165,7 @@ async def proxy(path: str, request: Request):
                 prompt_tokens=prompt,
                 completion_tokens=completion,
                 latency_ms=int((time.monotonic() - started) * 1000),
-                cost_usd=estimate_cost(resolved.provider, model, prompt, completion),
+                cost_usd=estimate_cost(model, prompt, completion),
             )
         )
 
@@ -195,7 +194,7 @@ async def proxy(path: str, request: Request):
         for k, v in request.headers.items()
         if k.lower() not in _SKIP_REQUEST_HEADERS
     }
-    headers.update(_auth_headers(resolved.provider, secret, dict(request.headers)))
+    headers.update(_auth_headers(secret, dict(request.headers)))
     url = f"{resolved.base_url}/{path.lstrip('/')}"
     if request.url.query:
         url += f"?{request.url.query}"

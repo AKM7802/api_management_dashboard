@@ -38,7 +38,7 @@ def test_grants_endpoints_are_admin_only(client):
 
 def test_granted_member_can_view_but_not_configure_api(client):
     """GET is available to any granted accessor (a member needs to see the
-    API's name/provider to use its Tokens/Usage tabs); PATCH/DELETE stay
+    API's name/base_url to use its Tokens/Usage tabs); PATCH/DELETE stay
     admin-only."""
     owner_headers, team, api, member_headers, member_id = _team_with_api_and_member(
         client

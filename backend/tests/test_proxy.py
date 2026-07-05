@@ -67,9 +67,9 @@ def proxied(client):
     return client
 
 
-def _setup(client, provider="openai"):
+def _setup(client):
     headers = signup(client)
-    api = create_api(client, headers, provider=provider)
+    api = create_api(client, headers)
     token = create_token(client, headers, api["id"])
     return headers, api, token["token"]
 
@@ -118,8 +118,11 @@ def test_proxy_sse_stream_passthrough(proxied):
     assert row["completion_tokens"] == 34
 
 
-def test_proxy_anthropic_header_and_usage(proxied):
-    headers, api, raw = _setup(proxied, provider="anthropic")
+def test_proxy_sends_x_api_key_generically_and_parses_anthropic_usage(proxied):
+    """No provider is ever declared at registration, so the proxy offers the
+    secret via every common auth convention — an upstream expecting
+    x-api-key (Anthropic-shaped) works exactly like one expecting Bearer."""
+    headers, api, raw = _setup(proxied)
 
     with proxied.stream(
         "POST",

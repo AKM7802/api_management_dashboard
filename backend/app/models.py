@@ -52,7 +52,6 @@ class ApiCredential(Base):
         String(36), ForeignKey("teams.id", ondelete="CASCADE"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(String(120))
-    provider: Mapped[str] = mapped_column(String(40))  # openai | anthropic | custom
     base_url: Mapped[str] = mapped_column(String(500))
     encrypted_secret: Mapped[bytes] = mapped_column(LargeBinary)
     secret_last4: Mapped[str] = mapped_column(String(4))

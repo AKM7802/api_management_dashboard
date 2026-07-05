@@ -5,8 +5,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-Provider = Literal["openai", "anthropic", "custom"]
-
 
 # --- auth --------------------------------------------------------------------
 
@@ -37,7 +35,6 @@ class UserOut(BaseModel):
 
 class ApiCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    provider: Provider
     base_url: str = Field(min_length=1, max_length=500)
     secret: str = Field(min_length=1, max_length=4096)
 
@@ -53,7 +50,6 @@ class ApiOut(BaseModel):
 
     id: str
     name: str
-    provider: str
     base_url: str
     secret_last4: str
     status: str

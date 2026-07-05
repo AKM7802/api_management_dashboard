@@ -82,7 +82,6 @@ def create_api(
         user_id=ctx.user.id,
         team_id=ctx.team.id if isinstance(ctx, TeamContext) else None,
         name=body.name,
-        provider=body.provider,
         base_url=body.base_url.rstrip("/"),
         encrypted_secret=encrypt_secret(body.secret),
         secret_last4=body.secret[-4:],
@@ -94,7 +93,7 @@ def create_api(
 
 @router.get("/{api_id}", response_model=schemas.ApiOut)
 def get_api(scoped: ScopedCredential = Depends(require_credential_access)):
-    # viewing (name/provider/status) is available to any granted member, not
+    # viewing (name/base_url/status) is available to any granted member, not
     # just admins — only configuring (PATCH/DELETE, below) is admin-only
     return scoped.credential
 
