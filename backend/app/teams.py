@@ -367,3 +367,69 @@ def team_usage_by_member(
     since = UsageStore.parse_range(range)
     credential_ids = _team_credential_ids(db, ctx.team.id)
     return member_usage_rows(db, request.app.state.usage.store, credential_ids, since)
+
+
+@router.get(
+    "/{team_id}/members/{user_id}/access",
+    response_model=list[schemas.MemberApiAccessRow],
+)
+def member_api_access(
+    user_id: str,
+    request: Request,
+    range: str = Query("30d", pattern="^(24h|7d|30d)$"),
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    """The per-member access + usage view: every API this team owns, whether
+    this specific member can use it, and how much they actually have —
+    the single place an owner/admin configures + reviews one person's
+    access instead of visiting each API's Access tab separately."""
+    target_membership = db.scalar(
+        select(models.TeamMembership).where(
+            models.TeamMembership.team_id == ctx.team.id,
+            models.TeamMembership.user_id == user_id,
+        )
+    )
+    if target_membership is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
+    implicit = target_membership.role in ADMIN_ROLES
+
+    credentials = db.scalars(
+        select(models.ApiCredential)
+        .where(models.ApiCredential.team_id == ctx.team.id)
+        .order_by(models.ApiCredential.created_at)
+    ).all()
+    credential_ids = [c.id for c in credentials]
+
+    granted_ids = set(
+        db.scalars(
+            select(models.ApiAccessGrant.credential_id).where(
+                models.ApiAccessGrant.user_id == user_id,
+                models.ApiAccessGrant.credential_id.in_(credential_ids),
+            )
+        ).all()
+    )
+
+    since = UsageStore.parse_range(range)
+    usage_by_credential = request.app.state.usage.store.usage_by_api_for_user(
+        credential_ids, user_id, since
+    )
+
+    rows = []
+    for cred in credentials:
+        usage = usage_by_credential.get(
+            cred.id, {"requests": 0, "total_tokens": 0, "cost_usd": 0.0, "errors": 0}
+        )
+        rows.append(
+            schemas.MemberApiAccessRow(
+                api_id=cred.id,
+                name=cred.name,
+                granted=implicit or cred.id in granted_ids,
+                implicit=implicit,
+                requests=usage["requests"],
+                total_tokens=usage["total_tokens"],
+                cost_usd=usage["cost_usd"],
+                errors=usage["errors"],
+            )
+        )
+    return rows

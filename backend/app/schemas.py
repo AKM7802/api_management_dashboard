@@ -206,3 +206,14 @@ class MemberUsageRow(BaseModel):
     total_tokens: int
     cost_usd: float
     errors: int
+
+
+class MemberApiAccessRow(BaseModel):
+    api_id: str
+    name: str
+    granted: bool
+    implicit: bool  # true for owner/admin — access can't be toggled off here
+    requests: int
+    total_tokens: int
+    cost_usd: float
+    errors: int

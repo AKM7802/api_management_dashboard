@@ -215,3 +215,29 @@ class UsageStore:
             ).fetchall()
         keys = ("user_id", "requests", "total_tokens", "cost_usd", "errors")
         return [dict(zip(keys, r)) for r in rows]
+
+    def usage_by_api_for_user(
+        self, credential_ids: list[str], user_id: str, since: datetime
+    ) -> dict[str, dict[str, Any]]:
+        """One member's breakdown per credential — "which APIs is this
+        person actually using, and how much" for the per-member access +
+        usage view. Keyed by credential_id (missing = no usage yet)."""
+        if not credential_ids:
+            return {}
+        placeholders = ",".join("?" for _ in credential_ids)
+        with self._lock:
+            rows = self._conn.execute(
+                f"""
+                SELECT credential_id,
+                       count(*)                             AS requests,
+                       coalesce(sum(total_tokens), 0)       AS total_tokens,
+                       coalesce(sum(cost_usd), 0)           AS cost_usd,
+                       sum(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS errors
+                FROM usage_logs
+                WHERE credential_id IN ({placeholders}) AND user_id = ? AND ts >= ?
+                GROUP BY credential_id
+                """,
+                [*credential_ids, user_id, since],
+            ).fetchall()
+        keys = ("credential_id", "requests", "total_tokens", "cost_usd", "errors")
+        return {r[0]: dict(zip(keys, r)) for r in rows}
