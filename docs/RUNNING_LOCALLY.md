@@ -167,16 +167,18 @@ explore an already-populated example, or reproduce it from scratch:
    it. Two equivalent ways to do this: open one of the team's APIs →
    **Access** tab → **Grant** next to their email; or, quicker when managing
    one person across several APIs, go to the dashboard's **Members** tab →
-   **Manage access** next to their name, which lists every team API with a
-   Grant/Revoke toggle and that person's actual usage on each, all in one
-   dialog. Access is per-API, not per-team — granting one API never gives
+   **View details** next to their name, which opens their own dedicated page
+   with a Grant/Revoke toggle for every team API plus their actual usage on
+   each. Access is per-API, not per-team — granting one API never gives
    access to another, so one member can have 2 APIs granted and another 3
    with no coupling between them. Owners and admins always have access to
-   every team API implicitly (shown as "Always" in that dialog).
-6. **Monitor usage per member** — the dashboard's **Members** tab shows every
-   member's requests/tokens/cost/errors across all the team's APIs; a single
-   API's **Usage** tab has its own "Usage by member" table scoped to just
-   that API. A member's own dashboard only ever shows their own usage.
+   every team API implicitly (shown as "Always" there).
+6. **Monitor usage per member** — the dashboard's **Members** tab has a
+   "Requests by member" chart plus a detail table; click **View details** on
+   any member for their own dedicated page — KPIs, a usage-over-time chart,
+   a "requests by API" breakdown, and their access table, all in one place.
+   A single API's own **Usage** tab has a "Usage by member" table scoped to
+   just that API. A member's own dashboard only ever shows their own usage.
 7. **Revoke instantly** — revoking a grant (or removing a member, or
    demoting an admin to member) denies their existing proxy token at the
    very next request — no waiting, no re-issuing tokens.
