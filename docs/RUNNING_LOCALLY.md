@@ -164,20 +164,19 @@ explore an already-populated example, or reproduce it from scratch:
    first if they don't have an account yet). They see a preview of which
    team/role they're joining before accepting.
 5. **Grant per-API access** — a plain **member** sees nothing until you grant
-   it. Two equivalent ways to do this: open one of the team's APIs →
-   **Access** tab → **Grant** next to their email; or, quicker when managing
-   one person across several APIs, go to the dashboard's **Members** tab →
-   **View details** next to their name, which opens their own dedicated page
-   with a Grant/Revoke toggle for every team API plus their actual usage on
-   each. Access is per-API, not per-team — granting one API never gives
+   it: open one of the team's APIs → **Access** tab → **Grant** next to their
+   email. Access is per-API, not per-team — granting one API never gives
    access to another, so one member can have 2 APIs granted and another 3
    with no coupling between them. Owners and admins always have access to
-   every team API implicitly (shown as "Always" there).
+   every team API implicitly.
 6. **Monitor usage per member** — the dashboard's **Members** tab has a
    "Requests by member" chart plus a detail table; click **View details** on
-   any member for their own dedicated page — KPIs, a usage-over-time chart,
-   a "requests by API" breakdown, and their access table, all in one place.
-   A single API's own **Usage** tab has a "Usage by member" table scoped to
+   any member for their own dedicated (read-only) page — KPIs, a
+   usage-over-time chart, a "requests by API" breakdown, and the list of
+   APIs they're actually granted (with "Always" for owners/admins). To
+   change what they have access to, use the **Access** tab on the API
+   itself, not this page. A single API's own **Usage** tab has a "Usage by
+   member" table scoped to
    just that API. A member's own dashboard only ever shows their own usage.
 7. **Revoke instantly** — revoking a grant (or removing a member, or
    demoting an admin to member) denies their existing proxy token at the
