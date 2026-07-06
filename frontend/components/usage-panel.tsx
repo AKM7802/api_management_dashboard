@@ -260,7 +260,7 @@ export function UsagePanel({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Time</TableHead>
-                    <TableHead>Model</TableHead>
+                    {isLikelyLlm ? <TableHead>Model</TableHead> : null}
                     <TableHead>Status</TableHead>
                     {isLikelyLlm ? (
                       <TableHead className="text-right">LLM Tokens</TableHead>
@@ -274,7 +274,7 @@ export function UsagePanel({
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {new Date(r.ts + "Z").toLocaleString()}
                       </TableCell>
-                      <TableCell>{r.model || "—"}</TableCell>
+                      {isLikelyLlm ? <TableCell>{r.model || "—"}</TableCell> : null}
                       <TableCell
                         className={
                           r.status_code >= 400 ? "text-destructive" : undefined

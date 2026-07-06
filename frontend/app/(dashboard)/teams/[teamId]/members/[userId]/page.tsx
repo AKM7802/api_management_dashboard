@@ -277,8 +277,12 @@ export default function MemberDetailPage() {
                 <TableHead>API</TableHead>
                 <TableHead>Access</TableHead>
                 <TableHead className="text-right">Requests</TableHead>
-                <TableHead className="text-right">Tokens</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
+                {hasTokenData ? (
+                  <TableHead className="text-right">Tokens</TableHead>
+                ) : null}
+                {hasTokenData ? (
+                  <TableHead className="text-right">Cost</TableHead>
+                ) : null}
                 <TableHead className="text-right">Errors</TableHead>
               </TableRow>
             </TableHeader>
@@ -297,12 +301,16 @@ export default function MemberDetailPage() {
                   <TableCell className="text-right tabular-nums">
                     {row.requests.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {compactNumber(row.total_tokens)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {currency(row.cost_usd)}
-                  </TableCell>
+                  {hasTokenData ? (
+                    <TableCell className="text-right tabular-nums">
+                      {compactNumber(row.total_tokens)}
+                    </TableCell>
+                  ) : null}
+                  {hasTokenData ? (
+                    <TableCell className="text-right tabular-nums">
+                      {currency(row.cost_usd)}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="text-right tabular-nums">
                     {row.errors.toLocaleString()}
                   </TableCell>

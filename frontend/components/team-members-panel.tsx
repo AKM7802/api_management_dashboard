@@ -177,6 +177,9 @@ export function TeamMembersPanel({
   const revokeInvite = useRevokeInvitation(teamId);
   const usageSummary = useTeamUsageSummary(teamId, "30d");
   const usageByMember = useTeamUsageByMember(teamId, "30d");
+  // no API declares whether it's an LLM at registration — only show
+  // token/cost columns once the team has actually reported some usage
+  const hasTokenData = (usageSummary.data?.total_tokens ?? 0) > 0;
 
   function onRoleChange(userId: string, role: Role) {
     updateRole.mutate(
@@ -342,7 +345,9 @@ export function TeamMembersPanel({
       {isAdmin ? (
         <>
           {usageSummary.data ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div
+              className={`grid grid-cols-2 gap-3 ${hasTokenData ? "sm:grid-cols-4" : "sm:grid-cols-2"}`}
+            >
               <Card className="gap-2 py-4">
                 <CardContent className="px-4">
                   <p className="text-sm text-muted-foreground">Requests</p>
@@ -351,22 +356,26 @@ export function TeamMembersPanel({
                   </p>
                 </CardContent>
               </Card>
-              <Card className="gap-2 py-4">
-                <CardContent className="px-4">
-                  <p className="text-sm text-muted-foreground">Tokens</p>
-                  <p className="text-2xl font-semibold tabular-nums">
-                    {compactNumber(usageSummary.data.total_tokens)}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="gap-2 py-4">
-                <CardContent className="px-4">
-                  <p className="text-sm text-muted-foreground">Est. cost</p>
-                  <p className="text-2xl font-semibold tabular-nums">
-                    {currency(usageSummary.data.cost_usd)}
-                  </p>
-                </CardContent>
-              </Card>
+              {hasTokenData ? (
+                <>
+                  <Card className="gap-2 py-4">
+                    <CardContent className="px-4">
+                      <p className="text-sm text-muted-foreground">Tokens</p>
+                      <p className="text-2xl font-semibold tabular-nums">
+                        {compactNumber(usageSummary.data.total_tokens)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="gap-2 py-4">
+                    <CardContent className="px-4">
+                      <p className="text-sm text-muted-foreground">Est. cost</p>
+                      <p className="text-2xl font-semibold tabular-nums">
+                        {currency(usageSummary.data.cost_usd)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : null}
               <Card className="gap-2 py-4">
                 <CardContent className="px-4">
                   <p className="text-sm text-muted-foreground">Error rate</p>
@@ -419,8 +428,12 @@ export function TeamMembersPanel({
                       <TableRow>
                         <TableHead>Member</TableHead>
                         <TableHead className="text-right">Requests</TableHead>
-                        <TableHead className="text-right">Tokens</TableHead>
-                        <TableHead className="text-right">Cost</TableHead>
+                        {hasTokenData ? (
+                          <TableHead className="text-right">Tokens</TableHead>
+                        ) : null}
+                        {hasTokenData ? (
+                          <TableHead className="text-right">Cost</TableHead>
+                        ) : null}
                         <TableHead className="text-right">Errors</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -438,12 +451,16 @@ export function TeamMembersPanel({
                           <TableCell className="text-right tabular-nums">
                             {row.requests.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {compactNumber(row.total_tokens)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {currency(row.cost_usd)}
-                          </TableCell>
+                          {hasTokenData ? (
+                            <TableCell className="text-right tabular-nums">
+                              {compactNumber(row.total_tokens)}
+                            </TableCell>
+                          ) : null}
+                          {hasTokenData ? (
+                            <TableCell className="text-right tabular-nums">
+                              {currency(row.cost_usd)}
+                            </TableCell>
+                          ) : null}
                           <TableCell className="text-right tabular-nums">
                             {row.errors.toLocaleString()}
                           </TableCell>
