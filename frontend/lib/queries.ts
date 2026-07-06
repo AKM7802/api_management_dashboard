@@ -444,8 +444,16 @@ export interface MergedBucket {
   cost_usd: number;
 }
 
-export interface PerApiStats {
-  api: ManagedApi;
+// the minimal shape useAllApiStats actually needs — lets it drive both the
+// dashboard (full ManagedApi[]) and a per-member view (just id/name from
+// that member's access rows) without duplicating the merge logic
+export interface ApiStatsTarget {
+  id: string;
+  name: string;
+}
+
+export interface PerApiStats<T extends ApiStatsTarget = ManagedApi> {
+  api: T;
   summary?: StatsSummary;
   series: StatsBucket[];
 }
@@ -455,22 +463,30 @@ export interface PerApiStats {
  * combines them client-side: no new backend endpoint needed. Buckets align
  * because every API's timestamps are truncated by the same backend clock.
  */
-export function useAllApiStats(apis: ManagedApi[] | undefined, range: StatsRange) {
+export function useAllApiStats<T extends ApiStatsTarget = ManagedApi>(
+  apis: T[] | undefined,
+  range: StatsRange,
+  memberId?: string,
+) {
   const { activeTeamId } = useActiveTeam();
   const interval: StatsInterval = range === "24h" ? "hour" : "day";
   const ids = apis?.map((a) => a.id) ?? [];
+  const memberQs = memberId ? `&member_id=${memberId}` : "";
 
   const summaryQueries = useQueries({
     queries: ids.map((id) => ({
-      queryKey: ["apis", id, "summary", range, activeTeamId, undefined],
-      queryFn: () => api<StatsSummary>(`/apis/${id}/stats/summary?range=${range}`),
+      queryKey: ["apis", id, "summary", range, activeTeamId, memberId],
+      queryFn: () =>
+        api<StatsSummary>(`/apis/${id}/stats/summary?range=${range}${memberQs}`),
     })),
   });
   const seriesQueries = useQueries({
     queries: ids.map((id) => ({
-      queryKey: ["apis", id, "stats", range, interval, activeTeamId, undefined],
+      queryKey: ["apis", id, "stats", range, interval, activeTeamId, memberId],
       queryFn: () =>
-        api<StatsBucket[]>(`/apis/${id}/stats?range=${range}&interval=${interval}`),
+        api<StatsBucket[]>(
+          `/apis/${id}/stats?range=${range}&interval=${interval}${memberQs}`,
+        ),
     })),
   });
 
@@ -479,7 +495,7 @@ export function useAllApiStats(apis: ManagedApi[] | undefined, range: StatsRange
     summaryQueries.some((q) => q.isPending) ||
     seriesQueries.some((q) => q.isPending);
 
-  const perApi: PerApiStats[] = (apis ?? []).map((a, i) => ({
+  const perApi: PerApiStats<T>[] = (apis ?? []).map((a, i) => ({
     api: a,
     summary: summaryQueries[i]?.data,
     series: seriesQueries[i]?.data ?? [],

@@ -1,11 +1,12 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, Settings2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { BarList } from "@/components/charts/bar-list";
 import { CodeBlock } from "@/components/code-block";
-import { MemberAccessDialog } from "@/components/member-access-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -252,11 +253,15 @@ export function TeamMembersPanel({
                       </TableCell>
                       {isAdmin ? (
                         <TableCell>
-                          <MemberAccessDialog
-                            teamId={teamId}
-                            userId={m.user_id}
-                            email={m.email}
-                          />
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            render={<Link href={`/teams/${teamId}/members/${m.user_id}`} />}
+                            nativeButton={false}
+                          >
+                            <Settings2 data-icon="inline-start" />
+                            View details
+                          </Button>
                         </TableCell>
                       ) : null}
                       <TableCell className="text-right">
@@ -375,50 +380,83 @@ export function TeamMembersPanel({
             <Skeleton className="h-24 w-full" />
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-heading">Usage by member</CardTitle>
-              <CardDescription>Across every API this team owns.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {usageByMember.isPending ? (
-                <Skeleton className="h-32 w-full" />
-              ) : usageByMember.data && usageByMember.data.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Member</TableHead>
-                      <TableHead className="text-right">Requests</TableHead>
-                      <TableHead className="text-right">Tokens</TableHead>
-                      <TableHead className="text-right">Cost</TableHead>
-                      <TableHead className="text-right">Errors</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usageByMember.data.map((row) => (
-                      <TableRow key={row.user_id}>
-                        <TableCell>{row.email}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.requests.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {compactNumber(row.total_tokens)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {currency(row.cost_usd)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.errors.toLocaleString()}
-                        </TableCell>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading">Requests by member</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {usageByMember.isPending ? (
+                  <Skeleton className="h-32 w-full" />
+                ) : usageByMember.data && usageByMember.data.length > 0 ? (
+                  <BarList
+                    items={usageByMember.data
+                      .filter((row) => row.requests > 0)
+                      .map((row) => ({
+                        key: row.user_id,
+                        label: row.email,
+                        value: row.requests,
+                        formattedValue: row.requests.toLocaleString(),
+                      }))}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No usage yet.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="font-heading">Usage by member</CardTitle>
+                <CardDescription>Across every API this team owns.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usageByMember.isPending ? (
+                  <Skeleton className="h-32 w-full" />
+                ) : usageByMember.data && usageByMember.data.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Member</TableHead>
+                        <TableHead className="text-right">Requests</TableHead>
+                        <TableHead className="text-right">Tokens</TableHead>
+                        <TableHead className="text-right">Cost</TableHead>
+                        <TableHead className="text-right">Errors</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-sm text-muted-foreground">No usage yet.</p>
-              )}
-            </CardContent>
-          </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {usageByMember.data.map((row) => (
+                        <TableRow key={row.user_id}>
+                          <TableCell>
+                            <Link
+                              className="font-medium underline-offset-4 hover:underline"
+                              href={`/teams/${teamId}/members/${row.user_id}`}
+                            >
+                              {row.email}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {row.requests.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {compactNumber(row.total_tokens)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {currency(row.cost_usd)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {row.errors.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No usage yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </>
       ) : null}
     </div>
