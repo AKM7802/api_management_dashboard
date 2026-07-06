@@ -17,6 +17,7 @@ import type {
   InviteRole,
   ManagedApi,
   Member,
+  MemberApiAccessRow,
   MemberUsageRow,
   ProxyToken,
   ProxyTokenCreated,
@@ -292,7 +293,12 @@ export function useGrantAccess(apiId: string) {
         method: "POST",
         body: JSON.stringify({ user_id: userId }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["apis", apiId, "grants"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["apis", apiId, "grants"] });
+      // keeps the per-member access dialog and dashboard's Members tab in
+      // sync regardless of which surface made the change
+      qc.invalidateQueries({ queryKey: ["teams"] });
+    },
   });
 }
 
@@ -301,7 +307,10 @@ export function useRevokeGrant(apiId: string) {
   return useMutation({
     mutationFn: (userId: string) =>
       api<void>(`/apis/${apiId}/grants/${userId}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["apis", apiId, "grants"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["apis", apiId, "grants"] });
+      qc.invalidateQueries({ queryKey: ["teams"] });
+    },
   });
 }
 
@@ -406,6 +415,22 @@ export function useTeamUsageByMember(teamId: string, range: StatsRange) {
     queryFn: () =>
       api<MemberUsageRow[]>(`/teams/${teamId}/usage/by-member?range=${range}`),
     enabled: !!teamId,
+  });
+}
+
+export function useMemberApiAccess(
+  teamId: string,
+  userId: string,
+  range: StatsRange,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["teams", teamId, "members", userId, "access", range],
+    queryFn: () =>
+      api<MemberApiAccessRow[]>(
+        `/teams/${teamId}/members/${userId}/access?range=${range}`,
+      ),
+    enabled: enabled && !!teamId && !!userId,
   });
 }
 

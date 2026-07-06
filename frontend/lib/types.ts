@@ -113,3 +113,14 @@ export interface MemberUsageRow {
   cost_usd: number;
   errors: number;
 }
+
+export interface MemberApiAccessRow {
+  api_id: string;
+  name: string;
+  granted: boolean;
+  implicit: boolean; // true for owner/admin — access can't be toggled off
+  requests: number;
+  total_tokens: number;
+  cost_usd: number;
+  errors: number;
+}

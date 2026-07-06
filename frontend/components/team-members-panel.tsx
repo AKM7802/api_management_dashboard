@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { CodeBlock } from "@/components/code-block";
+import { MemberAccessDialog } from "@/components/member-access-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -210,6 +211,7 @@ export function TeamMembersPanel({
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  {isAdmin ? <TableHead>API access</TableHead> : null}
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -248,6 +250,15 @@ export function TeamMembersPanel({
                           <Badge variant="secondary">{m.role}</Badge>
                         )}
                       </TableCell>
+                      {isAdmin ? (
+                        <TableCell>
+                          <MemberAccessDialog
+                            teamId={teamId}
+                            userId={m.user_id}
+                            email={m.email}
+                          />
+                        </TableCell>
+                      ) : null}
                       <TableCell className="text-right">
                         {canManage ? (
                           <Button
