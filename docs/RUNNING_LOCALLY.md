@@ -164,10 +164,15 @@ explore an already-populated example, or reproduce it from scratch:
    first if they don't have an account yet). They see a preview of which
    team/role they're joining before accepting.
 5. **Grant per-API access** — a plain **member** sees nothing until you grant
-   it: open one of the team's APIs → **Access** tab → **Grant** next to their
-   email. This is per-API, not per-team — granting one API never gives
-   access to another. Owners and admins always have access to every team API
-   implicitly.
+   it. Two equivalent ways to do this: open one of the team's APIs →
+   **Access** tab → **Grant** next to their email; or, quicker when managing
+   one person across several APIs, go to the dashboard's **Members** tab →
+   **Manage access** next to their name, which lists every team API with a
+   Grant/Revoke toggle and that person's actual usage on each, all in one
+   dialog. Access is per-API, not per-team — granting one API never gives
+   access to another, so one member can have 2 APIs granted and another 3
+   with no coupling between them. Owners and admins always have access to
+   every team API implicitly (shown as "Always" in that dialog).
 6. **Monitor usage per member** — the dashboard's **Members** tab shows every
    member's requests/tokens/cost/errors across all the team's APIs; a single
    API's **Usage** tab has its own "Usage by member" table scoped to just
