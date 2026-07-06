@@ -3,7 +3,6 @@
 import { AlertTriangle, Binary, DollarSign, Server, Zap } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { BackLink } from "@/components/back-link";
 import { BarList } from "@/components/charts/bar-list";
@@ -11,7 +10,6 @@ import { DonutChart } from "@/components/charts/donut-chart";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { KpiCard } from "@/components/kpi-card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,13 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { compactNumber, currency, percent } from "@/lib/format";
-import {
-  useAllApiStats,
-  useGrantAccess,
-  useMemberApiAccess,
-  useRevokeGrant,
-  useTeamMembers,
-} from "@/lib/queries";
+import { useAllApiStats, useMemberApiAccess, useTeamMembers } from "@/lib/queries";
 import type { StatsRange } from "@/lib/types";
 
 const DONUT_COLORS = [
@@ -40,45 +32,6 @@ const DONUT_COLORS = [
   "var(--chart-4)",
 ];
 
-function AccessCell({
-  apiId,
-  userId,
-  granted,
-  implicit,
-}: {
-  apiId: string;
-  userId: string;
-  granted: boolean;
-  implicit: boolean;
-}) {
-  const grant = useGrantAccess(apiId);
-  const revoke = useRevokeGrant(apiId);
-  const pending = grant.isPending || revoke.isPending;
-
-  if (implicit) {
-    return <Badge variant="secondary">Always (admin/owner)</Badge>;
-  }
-
-  function toggle() {
-    if (granted) {
-      revoke.mutate(userId, { onSuccess: () => toast.success("Access revoked") });
-    } else {
-      grant.mutate(userId, { onSuccess: () => toast.success("Access granted") });
-    }
-  }
-
-  return (
-    <Button
-      size="xs"
-      variant={granted ? "destructive" : "outline"}
-      disabled={pending}
-      onClick={toggle}
-    >
-      {granted ? "Revoke" : "Grant"}
-    </Button>
-  );
-}
-
 export default function MemberDetailPage() {
   const { teamId, userId } = useParams<{ teamId: string; userId: string }>();
   const [range, setRange] = useState<StatsRange>("7d");
@@ -87,9 +40,8 @@ export default function MemberDetailPage() {
   const access = useMemberApiAccess(teamId, userId, range);
 
   const member = members.data?.find((m) => m.user_id === userId);
-  const grantedApis = (access.data ?? [])
-    .filter((r) => r.granted)
-    .map((r) => ({ id: r.api_id, name: r.name }));
+  const grantedRows = (access.data ?? []).filter((r) => r.granted);
+  const grantedApis = grantedRows.map((r) => ({ id: r.api_id, name: r.name }));
 
   const { isPending, interval, perApi, mergedSeries, aggregate } =
     useAllApiStats(grantedApis, range, userId);
@@ -268,56 +220,60 @@ export default function MemberDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-heading">API access</CardTitle>
+          <CardTitle className="font-heading">Granted APIs</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>API</TableHead>
-                <TableHead>Access</TableHead>
-                <TableHead className="text-right">Requests</TableHead>
-                {hasTokenData ? (
-                  <TableHead className="text-right">Tokens</TableHead>
-                ) : null}
-                {hasTokenData ? (
-                  <TableHead className="text-right">Cost</TableHead>
-                ) : null}
-                <TableHead className="text-right">Errors</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {access.data?.map((row) => (
-                <TableRow key={row.api_id}>
-                  <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell>
-                    <AccessCell
-                      apiId={row.api_id}
-                      userId={userId}
-                      granted={row.granted}
-                      implicit={row.implicit}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {row.requests.toLocaleString()}
-                  </TableCell>
+          {grantedRows.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>API</TableHead>
+                  <TableHead>Access</TableHead>
+                  <TableHead className="text-right">Requests</TableHead>
                   {hasTokenData ? (
-                    <TableCell className="text-right tabular-nums">
-                      {compactNumber(row.total_tokens)}
-                    </TableCell>
+                    <TableHead className="text-right">Tokens</TableHead>
                   ) : null}
                   {hasTokenData ? (
-                    <TableCell className="text-right tabular-nums">
-                      {currency(row.cost_usd)}
-                    </TableCell>
+                    <TableHead className="text-right">Cost</TableHead>
                   ) : null}
-                  <TableCell className="text-right tabular-nums">
-                    {row.errors.toLocaleString()}
-                  </TableCell>
+                  <TableHead className="text-right">Errors</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {grantedRows.map((row) => (
+                  <TableRow key={row.api_id}>
+                    <TableCell className="font-medium">{row.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {row.implicit ? "Always" : "Granted"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.requests.toLocaleString()}
+                    </TableCell>
+                    {hasTokenData ? (
+                      <TableCell className="text-right tabular-nums">
+                        {compactNumber(row.total_tokens)}
+                      </TableCell>
+                    ) : null}
+                    {hasTokenData ? (
+                      <TableCell className="text-right tabular-nums">
+                        {currency(row.cost_usd)}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className="text-right tabular-nums">
+                      {row.errors.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No APIs granted yet. Grant access from an API&apos;s own Access
+              tab.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
