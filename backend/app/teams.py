@@ -370,6 +370,48 @@ def team_usage_by_member(
 
 
 @router.get(
+    "/{team_id}/usage/by-member/series",
+    response_model=list[schemas.MemberStatsBucket],
+)
+def team_usage_by_member_series(
+    request: Request,
+    range: str = Query("7d", pattern="^(24h|7d|30d)$"),
+    interval: str = Query("day", pattern="^(hour|day)$"),
+    ctx: TeamContext = Depends(require_team_role_path(*ADMIN_ROLES)),
+    db: Session = Depends(get_db),
+):
+    """One row per (member, time bucket) across every API this team owns —
+    the "usage over time, split by teammate" chart. Distinct from
+    usage/by-member, which is a single all-time snapshot per member with no
+    time axis."""
+    since = UsageStore.parse_range(range)
+    credential_ids = _team_credential_ids(db, ctx.team.id)
+    rows = request.app.state.usage.store.stats_by_member(
+        credential_ids, since, interval
+    )
+    user_ids = {r["user_id"] for r in rows}
+    users = (
+        db.scalars(select(models.User).where(models.User.id.in_(user_ids))).all()
+        if user_ids
+        else []
+    )
+    email_by_id = {u.id: u.email for u in users}
+    return [
+        schemas.MemberStatsBucket(
+            user_id=r["user_id"],
+            email=email_by_id.get(r["user_id"], "unknown"),
+            bucket=r["bucket"],
+            requests=r["requests"],
+            total_tokens=r["total_tokens"],
+            avg_latency_ms=r["avg_latency_ms"],
+            errors=r["errors"],
+            cost_usd=r["cost_usd"],
+        )
+        for r in rows
+    ]
+
+
+@router.get(
     "/{team_id}/members/{user_id}/access",
     response_model=list[schemas.MemberApiAccessRow],
 )

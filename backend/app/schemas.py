@@ -42,6 +42,7 @@ class ApiCreate(BaseModel):
 class ApiUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     status: Literal["active", "disabled"] | None = None
+    base_url: str | None = Field(default=None, min_length=1, max_length=500)
     secret: str | None = Field(default=None, min_length=1, max_length=4096)
 
 
@@ -54,8 +55,10 @@ class ApiOut(BaseModel):
 
     id: str
     name: str
-    base_url: str
-    secret_last4: str
+    # None for a non-admin team member — the upstream address/key are admin
+    # -only; a granted member only ever needs the gateway's own proxy URL.
+    base_url: str | None
+    secret_last4: str | None
     status: str
     created_at: datetime
     team_id: str | None = None
@@ -82,6 +85,15 @@ class ProxyTokenCreated(ProxyTokenOut):
     """Returned exactly once, on creation — includes the raw token."""
 
     token: str
+
+
+class ApiCreated(ApiOut):
+    """Returned only from POST /apis — a token is minted for the creator in
+    the same request so they have something to call the gateway with
+    immediately, without a separate trip to the Access Tokens tab. Shown
+    exactly once, same as a token created through that tab."""
+
+    token: ProxyTokenCreated
 
 
 # --- usage / stats ---------------------------------------------------------------
@@ -178,6 +190,7 @@ class InvitationCreated(InvitationOut):
 
 
 class InvitationPreview(BaseModel):
+    team_id: str
     team_name: str
     role: str
     email: str
@@ -206,6 +219,17 @@ class MemberUsageRow(BaseModel):
     total_tokens: int
     cost_usd: float
     errors: int
+
+
+class MemberStatsBucket(BaseModel):
+    user_id: str
+    email: str
+    bucket: datetime
+    requests: int
+    total_tokens: int
+    avg_latency_ms: float
+    errors: int
+    cost_usd: float
 
 
 class MemberApiAccessRow(BaseModel):

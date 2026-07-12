@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0}
+  :root{
+    --canvas:#f5f2eb;--panel:#ffffff;--panel-2:#faf8f3;--border:#ece7de;--border-2:#f3efe8;
+    --ink:#211f1b;--muted:#8a8378;--faint:#b5afa3;
+    --accent:#d9662e;--accent-soft:#fbeee4;--accent-ink:#b8501c;
+    --pos:#2e9e63;--pos-soft:#e9f4ee;
+    --num:'JetBrains Mono',ui-monospace,monospace;
+  }
+  [data-theme="dark"]{
+    --canvas:#0e1013;--panel:#16191e;--panel-2:#12151a;--border:#262b31;--border-2:#1c2127;
+    --ink:#e8ebef;--muted:#7d868f;--faint:#4b535b;
+    --accent:#ef7a3e;--accent-soft:#2a1a10;--accent-ink:#ef7a3e;
+    --pos:#43c07a;--pos-soft:#152418;
+  }
+  a{color:var(--accent)}
+</style>
+</helmet>
+
+<div data-screen-label="Auth" data-theme="{{ theme }}" style="min-height:100vh;background:var(--canvas);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;transition:background .3s,color .3s;display:flex;align-items:center;justify-content:center;padding:32px;position:relative">
+
+  <div onClick="{{ toggleTheme }}" style="position:absolute;top:22px;right:26px;width:34px;height:34px;border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;background:var(--panel-2)">{{ themeIcon }}</div>
+
+  <div style="width:840px;max-width:100%;border:1px solid var(--border);border-radius:20px;overflow:hidden;background:var(--panel);box-shadow:0 24px 60px rgba(40,30,20,.14);display:flex;min-height:480px">
+
+    <!-- form -->
+    <div style="flex:1;padding:44px 40px;display:flex;flex-direction:column;justify-content:center;gap:16px">
+      <div style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.02em"><span style="width:19px;height:19px;background:var(--accent);border-radius:6px;display:inline-block"></span>apigate</div>
+      <div style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:6px">{{ title }}</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px">
+        <div style="font-size:11.5px;font-weight:600;color:var(--muted)">EMAIL</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13.5px;background:var(--panel-2);color:var(--muted)">you@company.com</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:11.5px;font-weight:600;color:var(--muted)">PASSWORD</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13.5px;background:var(--panel-2);color:var(--muted)">••••••••</div>
+        <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:var(--muted);margin-top:2px">Minimum 8 characters · no email verification in this version.</div></sc-if>
+      </div>
+      <div onClick="{{ goApp }}" style="background:var(--accent);color:#fff;padding:12px;border-radius:10px;font-size:14px;font-weight:600;text-align:center;cursor:pointer;margin-top:4px">{{ cta }}</div>
+      <div style="font-size:13px;color:var(--muted)">{{ switchText }} <span onClick="{{ toggleMode }}" style="color:var(--accent);font-weight:600;cursor:pointer">{{ switchLink }}</span></div>
+    </div>
+
+    <!-- context -->
+    <div style="flex:1;padding:44px 40px;background:var(--panel-2);border-left:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;gap:16px">
+      <div style="font-size:20px;font-weight:700;line-height:1.25;letter-spacing:-.02em">Hand out proxy tokens, never your real keys.</div>
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:2px">
+        <div style="display:flex;gap:10px;align-items:center;font-size:13.5px"><span style="color:var(--accent);font-size:14px">◆</span>Encrypted credential custody</div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:13.5px"><span style="color:var(--accent);font-size:14px">◆</span>One gateway for any HTTP API</div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:13.5px"><span style="color:var(--accent);font-size:14px">◆</span>Live usage analytics</div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:14px;margin-top:8px">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="flex:1;border:1px solid var(--border);border-radius:9px;padding:9px 11px"><div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Requests</div><div style="font-family:var(--num);font-size:16px;font-weight:600;margin-top:3px">128k</div></div>
+          <div style="flex:1;border:1px solid var(--border);border-radius:9px;padding:9px 11px"><div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Cost</div><div style="font-family:var(--num);font-size:16px;font-weight:600;margin-top:3px">$47</div></div>
+        </div>
+        <svg viewBox="0 0 320 60" style="width:100%;height:52px;display:block" preserveAspectRatio="none"><defs><linearGradient id="au" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.22"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs><path d="M0,44 L53,38 L107,42 L160,26 L213,32 L267,16 L320,22 L320,60 L0,60 Z" fill="url(#au)"/><path d="M0,44 L53,38 L107,42 L160,26 L213,32 L267,16 L320,22" fill="none" style="stroke:var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:580},&quot;defaultDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  state = { dark: null, mode: 'signup' };
+  componentDidMount() { try { const v = localStorage.getItem('apigate-theme'); if (v != null && this.state.dark == null) this.setState({ dark: v === 'dark' }); } catch (e) {} }
+  setTheme(nd) { try { localStorage.setItem('apigate-theme', nd ? 'dark' : 'light'); } catch (e) {} this.setState({ dark: nd }); }
+  get isDark() { return this.state.dark == null ? (this.props.defaultDark ?? false) : this.state.dark; }
+  renderVals() {
+    const dark = this.isDark, signup = this.state.mode === 'signup';
+    return {
+      theme: dark ? 'dark' : 'light', themeIcon: dark ? '☀' : '☾',
+      toggleTheme: () => this.setTheme(!dark),
+      goApp: () => { window.location.href = 'API Dashboard.dc.html'; },
+      isSignup: signup,
+      title: signup ? 'Create your account' : 'Welcome back',
+      cta: signup ? 'Create account' : 'Log in',
+      switchText: signup ? 'Have an account?' : 'No account yet?',
+      switchLink: signup ? 'Log in' : 'Sign up',
+      toggleMode: () => this.setState({ mode: signup ? 'login' : 'signup' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

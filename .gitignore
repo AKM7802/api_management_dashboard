@@ -4,5 +4,6 @@ __pycache__/
 *.duckdb
 dev.db
 .env
+.env.prod
 node_modules/
 .next/

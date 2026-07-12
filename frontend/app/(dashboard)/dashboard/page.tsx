@@ -191,7 +191,7 @@ export default function DashboardPage() {
           value={section}
           onValueChange={(v) => setSection(v as typeof section)}
         >
-          <TabsList>
+          <TabsList variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
           </TabsList>
@@ -273,81 +273,6 @@ export default function DashboardPage() {
               </>
             )}
           </div>
-
-          <Card>
-            <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-              <CardTitle className="font-heading">
-                {role === "member" ? "Your granted APIs" : "Your APIs"}
-              </CardTitle>
-              {canManageApis ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  render={<Link href="/apis/new" />}
-                  nativeButton={false}
-                >
-                  <Plus data-icon="inline-start" />
-                  Add API
-                </Button>
-              ) : null}
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Base URL</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Requests</TableHead>
-                    {hasTokenData ? (
-                      <TableHead className="text-right">LLM Tokens</TableHead>
-                    ) : null}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {apis.data?.map((a) => {
-                    const stats = perApi.find((p) => p.api.id === a.id);
-                    return (
-                      <TableRow key={a.id}>
-                        <TableCell>
-                          <Link
-                            className="font-medium underline-offset-4 hover:underline"
-                            href={`/apis/${a.id}`}
-                          >
-                            {a.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="max-w-48 truncate font-mono text-xs text-muted-foreground">
-                          {a.base_url}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              a.status === "active" ? "secondary" : "outline"
-                            }
-                          >
-                            {a.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {stats?.summary
-                            ? stats.summary.requests.toLocaleString()
-                            : "—"}
-                        </TableCell>
-                        {hasTokenData ? (
-                          <TableCell className="text-right tabular-nums">
-                            {stats?.summary
-                              ? compactNumber(stats.summary.total_tokens)
-                              : "—"}
-                          </TableCell>
-                        ) : null}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
@@ -441,6 +366,83 @@ export default function DashboardPage() {
               </Card>
             </div>
           </div>
+
+          <Card>
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+              <CardTitle className="font-heading">
+                {role === "member" ? "Your granted APIs" : "Your APIs"}
+              </CardTitle>
+              {canManageApis ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href="/apis/new" />}
+                  nativeButton={false}
+                >
+                  <Plus data-icon="inline-start" />
+                  Add API
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    {canManageApis ? <TableHead>Base URL</TableHead> : null}
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Requests</TableHead>
+                    {hasTokenData ? (
+                      <TableHead className="text-right">LLM Tokens</TableHead>
+                    ) : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {apis.data?.map((a) => {
+                    const stats = perApi.find((p) => p.api.id === a.id);
+                    return (
+                      <TableRow key={a.id}>
+                        <TableCell>
+                          <Link
+                            className="font-medium underline-offset-4 hover:underline"
+                            href={`/apis/${a.id}`}
+                          >
+                            {a.name}
+                          </Link>
+                        </TableCell>
+                        {canManageApis ? (
+                          <TableCell className="max-w-48 truncate font-mono text-xs text-muted-foreground">
+                            {a.base_url}
+                          </TableCell>
+                        ) : null}
+                        <TableCell>
+                          <Badge
+                            variant={
+                              a.status === "active" ? "success" : "outline"
+                            }
+                          >
+                            {a.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {stats?.summary
+                            ? stats.summary.requests.toLocaleString()
+                            : "—"}
+                        </TableCell>
+                        {hasTokenData ? (
+                          <TableCell className="text-right tabular-nums">
+                            {stats?.summary
+                              ? compactNumber(stats.summary.total_tokens)
+                              : "—"}
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

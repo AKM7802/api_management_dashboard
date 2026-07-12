@@ -216,6 +216,43 @@ class UsageStore:
         keys = ("user_id", "requests", "total_tokens", "cost_usd", "errors")
         return [dict(zip(keys, r)) for r in rows]
 
+    def stats_by_member(
+        self,
+        credential_ids: list[str],
+        since: datetime,
+        interval: str,
+    ) -> list[dict[str, Any]]:
+        """Per-member time series across one or more credentials — the team-
+        wide "usage over time, split by teammate" chart. One row per
+        (user_id, bucket); buckets with no traffic for a member simply don't
+        appear (the caller fills gaps when pivoting for a chart)."""
+        if interval not in _INTERVALS:
+            raise ValueError(f"interval must be one of {sorted(_INTERVALS)}")
+        if not credential_ids:
+            return []
+        placeholders = ",".join("?" for _ in credential_ids)
+        with self._lock:
+            rows = self._conn.execute(
+                f"""
+                SELECT user_id,
+                       date_trunc('{interval}', ts) AS bucket,
+                       count(*)                              AS requests,
+                       coalesce(sum(total_tokens), 0)        AS total_tokens,
+                       coalesce(avg(latency_ms), 0)          AS avg_latency_ms,
+                       sum(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS errors,
+                       coalesce(sum(cost_usd), 0)            AS cost_usd
+                FROM usage_logs
+                WHERE credential_id IN ({placeholders}) AND ts >= ?
+                GROUP BY user_id, 2 ORDER BY user_id, bucket
+                """,
+                [*credential_ids, since],
+            ).fetchall()
+        keys = (
+            "user_id", "bucket", "requests", "total_tokens",
+            "avg_latency_ms", "errors", "cost_usd",
+        )
+        return [dict(zip(keys, r)) for r in rows]
+
     def usage_by_api_for_user(
         self, credential_ids: list[str], user_id: str, since: datetime
     ) -> dict[str, dict[str, Any]]:

@@ -47,25 +47,28 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-muted/20">
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/dashboard" aria-label="Dashboard home">
+    <div className="flex min-h-svh flex-col bg-background">
+      <header className="sticky top-0 z-40 border-b border-border bg-card">
+        <div className="mx-auto flex h-[57px] w-full max-w-6xl items-center gap-2 px-3 sm:gap-4 sm:px-6">
+          <Link href="/dashboard" aria-label="Dashboard home" className="shrink-0">
             <Logo />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="min-w-0 sm:mx-auto">
             <TeamSwitcher />
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0 sm:gap-2">
             <ThemeToggle />
             {me.isPending ? (
               <Skeleton className="size-8 rounded-full" />
             ) : me.data ? (
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full" />}>
-                  <Avatar className="size-8">
+                <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 gap-2 rounded-full px-1.5 sm:pr-3" />}>
+                  <Avatar className="size-[26px]">
                     <AvatarFallback className="text-xs">
                       {initials(me.data.email)}
                     </AvatarFallback>
                   </Avatar>
+                  <span className="hidden text-[13px] text-muted-foreground sm:inline">{me.data.email}</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuGroup>

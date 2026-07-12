@@ -20,11 +20,18 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://apimgmt:apimgmt@postgres:5432/apimgmt
       DUCKDB_PATH: /data/usage.duckdb
+      CORS_ORIGINS: http://localhost:3000
       # override these in production:
       # JWT_SECRET: ...
       # ENCRYPTION_KEY: ...   (Fernet key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
     volumes:
       - duckdata:/data
+    # lets an API's base_url point at something running on the host (e.g.
+    # "http://host.docker.internal:9000") instead of only other containers —
+    # without this, "localhost" from inside the container means the
+    # container itself, not your machine, and the proxy 502s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

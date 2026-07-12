@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     # analytical store (embedded file)
     duckdb_path: str = "./usage.duckdb"
 
+    # comma-separated browser origins allowed to call this API (the frontend's
+    # own URL) — e.g. "https://app.example.com,https://staging.example.com"
+    cors_origins: str = "http://localhost:3000"
+
     jwt_secret: str = _DEV_JWT_SECRET
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24  # 24h

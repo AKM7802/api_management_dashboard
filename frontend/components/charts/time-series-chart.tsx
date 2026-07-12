@@ -52,69 +52,70 @@ export function TimeSeriesChart<T extends { bucket: string }>({
   );
 
   return (
-    <div style={{ height }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <defs>
-            {series.map((s) => (
-              <linearGradient key={s.key} id={`fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={s.color} stopOpacity={0.22} />
-                <stop offset="95%" stopColor={s.color} stopOpacity={0.02} />
-              </linearGradient>
-            ))}
-          </defs>
-          <CartesianGrid
-            vertical={false}
-            strokeDasharray="0"
-            stroke="var(--border)"
-          />
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-            minTickGap={24}
-          />
-          <YAxis
-            width={64}
-            allowDecimals={!integerYAxis}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-            tickFormatter={series[0].format}
-          />
-          <Tooltip
-            cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1 }}
-            content={<ChartTooltip formatters={formatters} />}
-          />
-          {series.map((s) =>
-            s.type === "bar" ? (
-              <Bar
-                key={s.key}
-                dataKey={s.key as string}
-                name={s.label}
-                fill={s.color}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={24}
-                isAnimationActive={false}
-              />
-            ) : (
-              <Area
-                key={s.key}
-                dataKey={s.key as string}
-                name={s.label}
-                type="monotone"
-                stroke={s.color}
-                strokeWidth={2}
-                fill={`url(#fill-${s.key})`}
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)" }}
-                isAnimationActive={false}
-              />
-            ),
-          )}
-        </ComposedChart>
-      </ResponsiveContainer>
+    <div className="w-full">
+      {/* height lives on this inner wrapper, not the outer one — the legend
+          below needs its own natural height on top of the chart's fixed
+          height, or the Card's overflow-hidden clips it clean off */}
+      <div style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <defs>
+              {series.map((s) => (
+                <linearGradient key={s.key} id={`fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={s.color} stopOpacity={0.22} />
+                  <stop offset="95%" stopColor={s.color} stopOpacity={0.02} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid vertical={false} strokeDasharray="0" stroke="var(--border)" />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+              minTickGap={24}
+            />
+            <YAxis
+              width={64}
+              allowDecimals={!integerYAxis}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+              tickFormatter={series[0].format}
+            />
+            <Tooltip
+              cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1 }}
+              content={<ChartTooltip formatters={formatters} />}
+            />
+            {series.map((s) =>
+              s.type === "bar" ? (
+                <Bar
+                  key={s.key}
+                  dataKey={s.key as string}
+                  name={s.label}
+                  fill={s.color}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={24}
+                  isAnimationActive={false}
+                />
+              ) : (
+                <Area
+                  key={s.key}
+                  dataKey={s.key as string}
+                  name={s.label}
+                  type="monotone"
+                  stroke={s.color}
+                  strokeWidth={2}
+                  fill={`url(#fill-${s.key})`}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)" }}
+                  isAnimationActive={false}
+                />
+              ),
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
       {series.length > 1 ? (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
           {series.map((s) => (

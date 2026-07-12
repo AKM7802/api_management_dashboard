@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-apimgmt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:-apimgmt}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apimgmt}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # not published to the host — only "backend" talks to it, over the
+    # private compose network
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-apimgmt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-apimgmt}
+      DUCKDB_PATH: /data/usage.duckdb
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.prod}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env.prod}
+      CORS_ORIGINS: ${FRONTEND_URL:?set FRONTEND_URL in .env.prod}
+    volumes:
+      - duckdata:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # not published to the host — only reachable from "caddy", over the
+    # private compose network. Exactly one replica: DuckDB is single-writer
+    # (see docs/PRODUCTION_DEPLOYMENT.md#scaling--concurrency)
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # baked into the JS bundle at BUILD time, not read at runtime —
+        # changing it means rebuilding this image, not just restarting it
+        NEXT_PUBLIC_API_URL: ${BACKEND_URL:?set BACKEND_URL in .env.prod}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # not published to the host either — only reachable from "caddy"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  pgdata:
+  duckdata:
+  caddy_data:
+  caddy_config:

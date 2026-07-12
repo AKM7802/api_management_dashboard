@@ -6,6 +6,7 @@ Manage your API keys in one place: add an upstream API (OpenAI, Anthropic, or an
 - **Frontend:** Next.js (dashboard + landing) — *in progress*
 - Plans live in [`docs/plans/`](docs/plans/README.md).
 - **Full local-run guide + dummy logins:** [`docs/RUNNING_LOCALLY.md`](docs/RUNNING_LOCALLY.md).
+- **Production deployment (separate services, env vars, HTTPS):** [`docs/PRODUCTION_DEPLOYMENT.md`](docs/PRODUCTION_DEPLOYMENT.md).
 
 ## Run with Docker
 
@@ -62,3 +63,6 @@ cd backend && uv run pytest -q
 | `DUCKDB_PATH` | `./usage.duckdb` | analytical store file |
 | `JWT_SECRET` | dev value | **set in production** |
 | `ENCRYPTION_KEY` | dev value | Fernet key — **set in production** |
+| `CORS_ORIGINS` | `http://localhost:3000` | comma-separated frontend origin(s) — **set in production** |
+
+Full production reference (all vars, secret generation, HTTPS setup): [`docs/PRODUCTION_DEPLOYMENT.md`](docs/PRODUCTION_DEPLOYMENT.md).

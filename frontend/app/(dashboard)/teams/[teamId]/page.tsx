@@ -64,7 +64,7 @@ export default function TeamSettingsPage() {
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
             {team.name}
           </h1>
-          <Badge variant="outline">{myRole}</Badge>
+          <Badge variant={myRole === "owner" ? "accent" : "outline"}>{myRole}</Badge>
         </div>
         {isAdmin ? (
           <Button variant="outline" size="sm" onClick={onRename}>

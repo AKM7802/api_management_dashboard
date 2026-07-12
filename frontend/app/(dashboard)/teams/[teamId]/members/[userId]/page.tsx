@@ -22,7 +22,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { compactNumber, currency, percent } from "@/lib/format";
-import { useAllApiStats, useMemberApiAccess, useTeamMembers } from "@/lib/queries";
+import {
+  useAllApiStats,
+  useMemberApiAccess,
+  useTeamMembers,
+  useTeams,
+} from "@/lib/queries";
 import type { StatsRange } from "@/lib/types";
 
 const DONUT_COLORS = [
@@ -35,9 +40,15 @@ const DONUT_COLORS = [
 export default function MemberDetailPage() {
   const { teamId, userId } = useParams<{ teamId: string; userId: string }>();
   const [range, setRange] = useState<StatsRange>("7d");
+  // scoped to the team in the URL, not whatever team is currently active in
+  // the switcher elsewhere in the app -- those can differ if this link is
+  // opened while a different team is selected
+  const teams = useTeams();
+  const myRole = teams.data?.find((t) => t.id === teamId)?.my_role;
+  const isAdmin = myRole === "owner" || myRole === "admin";
 
   const members = useTeamMembers(teamId);
-  const access = useMemberApiAccess(teamId, userId, range);
+  const access = useMemberApiAccess(teamId, userId, range, isAdmin);
 
   const member = members.data?.find((m) => m.user_id === userId);
   const grantedRows = (access.data ?? []).filter((r) => r.granted);
@@ -88,12 +99,25 @@ export default function MemberDetailPage() {
       };
     });
 
-  if (members.isPending || access.isPending) {
+  if (members.isPending || (teams.data && !isAdmin ? false : access.isPending)) {
     return (
       <div className="flex flex-col gap-4">
         <BackLink href="/dashboard" label="Back to dashboard" />
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (teams.data && !isAdmin) {
+    return (
+      <div className="flex flex-col gap-4">
+        <BackLink href="/dashboard" label="Back to dashboard" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Only owners and admins can view this page</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
@@ -107,7 +131,11 @@ export default function MemberDetailPage() {
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
             {member?.email ?? "Member"}
           </h1>
-          {member ? <Badge variant="outline">{member.role}</Badge> : null}
+          {member ? (
+            <Badge variant={member.role === "owner" ? "accent" : "outline"}>
+              {member.role}
+            </Badge>
+          ) : null}
         </div>
         <Tabs value={range} onValueChange={(v) => setRange(v as StatsRange)}>
           <TabsList>
@@ -244,7 +272,7 @@ export default function MemberDetailPage() {
                   <TableRow key={row.api_id}>
                     <TableCell className="font-medium">{row.name}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
+                      <Badge variant="accent">
                         {row.implicit ? "Always" : "Granted"}
                       </Badge>
                     </TableCell>

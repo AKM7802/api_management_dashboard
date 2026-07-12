@@ -9,13 +9,15 @@ def test_create_token_shows_raw_once(client):
     assert created["token"].startswith("xpxy_live_")
     assert created["token_prefix"] == created["token"][:14]
 
-    # listing never exposes the raw token
+    # listing never exposes the raw token — API creation also auto-mints a
+    # "default" token for the creator, so two rows are expected here
     r = client.get(f"/apis/{api['id']}/tokens", headers=headers)
     assert r.status_code == 200
     listed = r.json()
-    assert len(listed) == 1
-    assert "token" not in listed[0]
-    assert listed[0]["token_prefix"] == created["token_prefix"]
+    assert len(listed) == 2
+    by_prefix = {t["token_prefix"]: t for t in listed}
+    assert created["token_prefix"] in by_prefix
+    assert "token" not in by_prefix[created["token_prefix"]]
 
 
 def test_revoke_token(client):

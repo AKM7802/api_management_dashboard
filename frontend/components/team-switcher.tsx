@@ -20,7 +20,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -70,15 +69,20 @@ export function TeamSwitcher() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="outline" size="sm" className="gap-1.5" />}
+          render={
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 min-w-0 gap-1.5 rounded-full bg-muted px-2.5 font-semibold sm:gap-2 sm:px-3.5"
+            />
+          }
         >
-          <Users className="size-3.5" />
-          <span className="max-w-32 truncate">{label}</span>
-          <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+          <Users className="size-3.5 shrink-0" />
+          <span className="max-w-16 truncate sm:max-w-32">{label}</span>
+          <ChevronsUpDown className="size-3 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuContent align="center" className="w-56">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Context</DropdownMenuLabel>
             <DropdownMenuItem onClick={selectPersonal}>
               {!activeTeamId ? <Check className="size-3.5" /> : <span className="size-3.5" />}
               Personal
@@ -88,7 +92,6 @@ export function TeamSwitcher() {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Teams</DropdownMenuLabel>
                 {teams.data.map((team) => (
                   <DropdownMenuItem
                     key={team.id}
@@ -99,7 +102,7 @@ export function TeamSwitcher() {
                     ) : (
                       <span className="size-3.5" />
                     )}
-                    <span className="flex-1 truncate">{team.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{team.name}</span>
                     <Badge variant="outline" className="ml-auto shrink-0 text-xs">
                       {team.my_role}
                     </Badge>

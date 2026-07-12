@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.auth import get_current_user
 from app.db.postgres import get_db
-from app.security import encrypt_secret
+from app.security import encrypt_secret, generate_proxy_token, hash_token
 from app.teams_deps import (
     ADMIN_ROLES,
     Context,
@@ -26,6 +26,47 @@ from app.teams_deps import (
 from app.token_cache import invalidate_credential, invalidate_grant
 
 router = APIRouter(prefix="/apis", tags=["apis"])
+
+
+def _api_out(cred: models.ApiCredential, is_admin: bool) -> schemas.ApiOut:
+    """The upstream base_url/key are admin-only — a granted member calls the
+    gateway's own proxy URL and never needs (or sees) what's behind it."""
+    return schemas.ApiOut(
+        id=cred.id,
+        name=cred.name,
+        base_url=cred.base_url if is_admin else None,
+        secret_last4=cred.secret_last4 if is_admin else None,
+        status=cred.status,
+        created_at=cred.created_at,
+        team_id=cred.team_id,
+    )
+
+
+def _check_name_available(
+    db: Session,
+    name: str,
+    user_id: str,
+    team_id: str | None,
+    exclude_id: str | None = None,
+) -> None:
+    """Names must be unique within their scope — a user's personal APIs, or
+    a team's APIs — so the dashboard/dropdowns never show two entries a
+    person can't tell apart."""
+    query = select(models.ApiCredential).where(models.ApiCredential.name == name)
+    if team_id is None:
+        query = query.where(
+            models.ApiCredential.user_id == user_id,
+            models.ApiCredential.team_id.is_(None),
+        )
+    else:
+        query = query.where(models.ApiCredential.team_id == team_id)
+    if exclude_id is not None:
+        query = query.where(models.ApiCredential.id != exclude_id)
+    if db.scalar(query) is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f'An API named "{name}" already exists.',
+        )
 
 
 def get_owned_credential(
@@ -47,7 +88,7 @@ def list_apis(
     ctx: Context = Depends(get_active_context), db: Session = Depends(get_db)
 ):
     if isinstance(ctx, PersonalContext):
-        return db.scalars(
+        creds = db.scalars(
             select(models.ApiCredential)
             .where(
                 models.ApiCredential.user_id == ctx.user.id,
@@ -55,20 +96,23 @@ def list_apis(
             )
             .order_by(models.ApiCredential.created_at.desc())
         ).all()
+        return [_api_out(c, is_admin=True) for c in creds]
 
+    is_admin = ctx.membership.role in ADMIN_ROLES
     query = select(models.ApiCredential).where(
         models.ApiCredential.team_id == ctx.team.id
     )
-    if ctx.membership.role not in ADMIN_ROLES:
+    if not is_admin:
         # members only see APIs they've been individually granted
         query = query.join(
             models.ApiAccessGrant,
             models.ApiAccessGrant.credential_id == models.ApiCredential.id,
         ).where(models.ApiAccessGrant.user_id == ctx.user.id)
-    return db.scalars(query.order_by(models.ApiCredential.created_at.desc())).all()
+    creds = db.scalars(query.order_by(models.ApiCredential.created_at.desc())).all()
+    return [_api_out(c, is_admin=is_admin) for c in creds]
 
 
-@router.post("", response_model=schemas.ApiOut, status_code=201)
+@router.post("", response_model=schemas.ApiCreated, status_code=201)
 def create_api(
     body: schemas.ApiCreate,
     ctx: Context = Depends(get_active_context),
@@ -78,17 +122,44 @@ def create_api(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Admin or owner role required"
         )
+    team_id = ctx.team.id if isinstance(ctx, TeamContext) else None
+    _check_name_available(db, body.name, ctx.user.id, team_id)
     cred = models.ApiCredential(
         user_id=ctx.user.id,
-        team_id=ctx.team.id if isinstance(ctx, TeamContext) else None,
+        team_id=team_id,
         name=body.name,
         base_url=body.base_url.rstrip("/"),
         encrypted_secret=encrypt_secret(body.secret),
         secret_last4=body.secret[-4:],
     )
     db.add(cred)
+    db.flush()  # assigns cred.id, without committing yet
+
+    # mint a token for the creator in the same request — otherwise every new
+    # API is unusable until a separate trip to the Access Tokens tab
+    raw = generate_proxy_token()
+    token = models.ProxyToken(
+        credential_id=cred.id,
+        created_by_user_id=ctx.user.id,
+        name="default",
+        token_hash=hash_token(raw),
+        token_prefix=raw[:14],
+    )
+    db.add(token)
     db.commit()
-    return cred
+
+    return schemas.ApiCreated(
+        **_api_out(cred, is_admin=True).model_dump(),
+        token=schemas.ProxyTokenCreated(
+            id=token.id,
+            name=token.name,
+            token_prefix=token.token_prefix,
+            status=token.status,
+            created_at=token.created_at,
+            last_used_at=token.last_used_at,
+            token=raw,
+        ),
+    )
 
 
 @router.post("/{api_id}/attach-team", response_model=schemas.ApiOut)
@@ -121,6 +192,7 @@ def attach_to_team(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Admin or owner role required"
         )
+    _check_name_available(db, cred.name, user.id, body.team_id)
 
     cred.team_id = body.team_id
     db.commit()
@@ -133,9 +205,10 @@ def attach_to_team(
 
 @router.get("/{api_id}", response_model=schemas.ApiOut)
 def get_api(scoped: ScopedCredential = Depends(require_credential_access)):
-    # viewing (name/base_url/status) is available to any granted member, not
-    # just admins — only configuring (PATCH/DELETE, below) is admin-only
-    return scoped.credential
+    # viewing (name/status) is available to any granted member, not just
+    # admins — base_url/key are admin-only, and configuring (PATCH/DELETE,
+    # below) is admin-only too
+    return _api_out(scoped.credential, is_admin=scoped.is_admin)
 
 
 @router.patch("/{api_id}", response_model=schemas.ApiOut)
@@ -146,16 +219,20 @@ def update_api(
     db: Session = Depends(get_db),
 ):
     cred = scoped.credential
-    if body.name is not None:
+    if body.name is not None and body.name != cred.name:
+        _check_name_available(db, body.name, cred.user_id, cred.team_id, exclude_id=cred.id)
         cred.name = body.name
     if body.status is not None:
         cred.status = body.status
+    if body.base_url is not None:
+        cred.base_url = body.base_url.rstrip("/")
     if body.secret is not None:  # secret rotation
         cred.encrypted_secret = encrypt_secret(body.secret)
         cred.secret_last4 = body.secret[-4:]
     db.commit()
-    # disable/rotation must take effect immediately, not after the cache TTL
-    if body.status is not None or body.secret is not None:
+    # disable/rotation/base_url changes must take effect immediately, not
+    # after the cache TTL, since the proxy reads all three off the cache
+    if body.status is not None or body.base_url is not None or body.secret is not None:
         invalidate_credential(request.app, cred.id)
     return cred
 

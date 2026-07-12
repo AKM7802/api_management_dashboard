@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+  .dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.3 system-ui,sans-serif;color:#1a1a1a}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+  .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.35 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:960px}
+  .dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+  .dv-next{margin:26px 0 0;font:12.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+  .dv-next a{color:#2a78d6;text-decoration:none;font-weight:600}
+  a{color:#2a78d6}a:hover{color:#1b5fb0}
+
+  .scr{background:#fff;border:1.6px solid #2b2b2b;border-radius:10px;overflow:hidden;font-family:system-ui,sans-serif;color:#2b2b2b}
+  .box{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,.045) 6px,rgba(0,0,0,.045) 7px),#f5f3ef;border:1.4px dashed #a6a6a6;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#8a8a8a;font:11px ui-monospace,Menlo,monospace;text-align:center;padding:6px}
+  .anno{font-family:'Caveat',cursive;color:#2a78d6;font-size:16px;line-height:1.1}
+  .anno.warn{color:#c2560f}
+  .tag{display:inline-flex;align-items:center;gap:5px;border:1.3px solid #2b2b2b;border-radius:6px;padding:3px 9px;font:600 11px system-ui;background:#fff;white-space:nowrap}
+  .tag.on{background:#2b2b2b;color:#fff}
+  .pill{border:1.4px solid #2b2b2b;border-radius:999px;padding:5px 12px;font:600 11.5px system-ui;background:#fff;display:inline-flex;align-items:center;gap:7px}
+  .tab{border:1.3px solid #2b2b2b;border-radius:7px 7px 0 0;padding:6px 13px;font:600 11px system-ui;background:#efece7;color:#6a6a6a}
+  .tab.on{background:#fff;color:#2b2b2b;border-bottom-color:#fff;position:relative;top:1.3px}
+  .btn{border:1.5px solid #2b2b2b;border-radius:7px;padding:6px 13px;font:600 11px system-ui;background:#2b2b2b;color:#fff;white-space:nowrap}
+  .btn.ghost{background:#fff;color:#2b2b2b}
+  .seg{display:inline-flex;border:1.4px solid #2b2b2b;border-radius:7px;overflow:hidden}
+  .seg>span{padding:5px 11px;font:600 11px system-ui;border-right:1.3px solid #2b2b2b}
+  .seg>span:last-child{border-right:none}
+  .seg>span.on{background:#2b2b2b;color:#fff}
+  .kpi{border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px;flex:1;min-width:0}
+  .kpi .k{font:600 10px system-ui;letter-spacing:.03em;color:#7a7a7a;text-transform:uppercase}
+  .kpi .v{font:700 22px system-ui;margin-top:5px}
+  .navi{padding:8px 11px;border-radius:7px;font:600 12px system-ui;color:#5a5a5a;display:flex;align-items:center;gap:9px}
+  .navi.on{background:#2b2b2b;color:#fff}
+  .rowln{display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:1.2px solid rgba(0,0,0,.1);font:12px system-ui}
+  .dot{width:9px;height:9px;border-radius:999px;background:#2b2b2b;flex:none}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t7">
+  <div class="dv-thd"><a class="dv-tid" href="#t7">7</a><span class="dv-tname">Hi-fi visual directions — the <a class="dv-oid" href="#1b">1b</a> Dashboard Overview rendered three ways (real color, type, charts)</span></div>
+  <div class="dv-opts">
+
+    <!-- ===================== 7a : INK & SIGNAL ===================== -->
+    <div class="dv-opt" id="7a">
+      <div class="dv-olabel"><a class="dv-oid" href="#7a">7a</a><b>Ink &amp; Signal</b> — restrained developer-tool minimal. Warm off-white, near-black ink, a single electric-indigo signal color used only for the active + primary. Space Grotesk headings, JetBrains Mono for every number.</div>
+      <div style="width:940px;border:1px solid #e6e2da;border-radius:12px;overflow:hidden;background:#fbfaf8;font-family:'Space Grotesk',system-ui,sans-serif;color:#1a1917;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+        <div style="display:flex;align-items:center;gap:20px;padding:13px 20px;border-bottom:1px solid #ece8e1;background:#fff">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.02em"><span style="width:18px;height:18px;background:#3b5bdb;border-radius:5px;display:inline-block"></span>apigate</div>
+          <div style="display:flex;gap:2px;font-size:13px;font-weight:500">
+            <span style="padding:6px 12px;background:#f0eefb;color:#3b5bdb;border-radius:7px;font-weight:600">Overview</span>
+            <span style="padding:6px 12px;color:#8a857c">APIs</span>
+            <span style="padding:6px 12px;color:#c3bfb6">Members</span>
+          </div>
+          <div style="margin:0 auto;display:flex;align-items:center;gap:8px;border:1px solid #e6e2da;border-radius:999px;padding:5px 13px;font-size:12.5px;font-weight:600;background:#fff">◇ Personal <span style="color:#b3aea4;font-size:10px">▾</span></div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#8a857c"><span style="width:24px;height:24px;border-radius:999px;background:#e9e5dd;display:inline-block"></span>me@acme.co</div>
+        </div>
+        <div style="padding:22px 24px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div><div style="font-size:22px;font-weight:700;letter-spacing:-.02em">Overview</div><div style="font-size:12.5px;color:#8a857c;margin-top:2px">3 APIs · last 7 days</div></div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="display:flex;border:1px solid #e6e2da;border-radius:8px;overflow:hidden;font-size:12px;font-weight:600;background:#fff"><span style="padding:6px 12px;color:#8a857c">24h</span><span style="padding:6px 12px;background:#1a1917;color:#fff">7d</span><span style="padding:6px 12px;color:#8a857c">30d</span></div>
+              <div style="background:#3b5bdb;color:#fff;padding:7px 15px;border-radius:8px;font-size:12.5px;font-weight:600">+ Add API</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:13px 15px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#8a857c;font-weight:600">Requests</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;margin-top:6px">128k</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#3b8f5a;margin-top:2px">+12%</div></div>
+            <div style="flex:1;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:13px 15px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#8a857c;font-weight:600">Tokens</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;margin-top:6px">9.4M</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#3b8f5a;margin-top:2px">+8%</div></div>
+            <div style="flex:1;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:13px 15px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#8a857c;font-weight:600">Est. cost</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;margin-top:6px">$47</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a857c;margin-top:2px">≈$0.37/1k</div></div>
+            <div style="flex:1;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:13px 15px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#8a857c;font-weight:600">Avg latency</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;margin-top:6px">412ms</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a857c;margin-top:2px">p95 980</div></div>
+            <div style="flex:1;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:13px 15px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#8a857c;font-weight:600">Error rate</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;margin-top:6px">0.8%</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a857c;margin-top:2px">1,024 err</div></div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:2;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:15px 16px"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:13px;font-weight:600">Requests over time</div><div style="font-size:11px;color:#8a857c;font-family:'JetBrains Mono',monospace">hourly</div></div>
+              <svg viewBox="0 0 480 120" style="width:100%;height:120px;display:block"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b5bdb" stop-opacity=".18"/><stop offset="1" stop-color="#3b5bdb" stop-opacity="0"/></linearGradient></defs><path d="M0,90 L40,78 L80,84 L120,60 L160,66 L200,44 L240,52 L280,30 L320,40 L360,22 L400,34 L440,18 L480,26 L480,120 L0,120 Z" fill="url(#ga)"/><path d="M0,90 L40,78 L80,84 L120,60 L160,66 L200,44 L240,52 L280,30 L320,40 L360,22 L400,34 L440,18 L480,26" fill="none" stroke="#3b5bdb" stroke-width="2"/></svg>
+            </div>
+            <div style="flex:1;border:1px solid #ece8e1;background:#fff;border-radius:10px;padding:15px 16px;display:flex;flex-direction:column"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Requests by API</div>
+              <div style="display:flex;align-items:center;gap:14px"><div style="width:84px;height:84px;border-radius:999px;background:conic-gradient(#3b5bdb 0 64%,#8aa0f0 64% 88%,#d4dbf7 88% 100%)"></div><div style="font-size:11.5px;display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace"><div><span style="color:#3b5bdb">●</span> OpenAI 64%</div><div><span style="color:#8aa0f0">●</span> Anthropic 24%</div><div><span style="color:#d4dbf7">●</span> Weather 12%</div></div></div>
+            </div>
+          </div>
+          <div style="border:1px solid #ece8e1;background:#fff;border-radius:10px;overflow:hidden">
+            <div style="display:flex;padding:9px 16px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#8a857c;font-weight:600;border-bottom:1px solid #f0ece5"><span style="flex:2">API</span><span style="flex:1;font-family:'JetBrains Mono',monospace">Requests</span><span style="flex:1;font-family:'JetBrains Mono',monospace">Tokens</span><span style="flex:1;font-family:'JetBrains Mono',monospace">Cost</span><span style="width:70px">Status</span></div>
+            <div style="display:flex;align-items:center;padding:11px 16px;font-size:13px;border-bottom:1px solid #f5f2ec"><span style="flex:2;font-weight:500">OpenAI prod</span><span style="flex:1;font-family:'JetBrains Mono',monospace">82,140</span><span style="flex:1;font-family:'JetBrains Mono',monospace">6.1M</span><span style="flex:1;font-family:'JetBrains Mono',monospace">$31</span><span style="width:70px"><span style="font-size:10.5px;font-weight:600;color:#3b8f5a;background:#e8f4ec;padding:2px 8px;border-radius:999px">active</span></span></div>
+            <div style="display:flex;align-items:center;padding:11px 16px;font-size:13px;border-bottom:1px solid #f5f2ec"><span style="flex:2;font-weight:500">Anthropic</span><span style="flex:1;font-family:'JetBrains Mono',monospace">31,020</span><span style="flex:1;font-family:'JetBrains Mono',monospace">3.3M</span><span style="flex:1;font-family:'JetBrains Mono',monospace">$16</span><span style="width:70px"><span style="font-size:10.5px;font-weight:600;color:#3b8f5a;background:#e8f4ec;padding:2px 8px;border-radius:999px">active</span></span></div>
+            <div style="display:flex;align-items:center;padding:11px 16px;font-size:13px"><span style="flex:2;font-weight:500">Weather API</span><span style="flex:1;font-family:'JetBrains Mono',monospace">15,300</span><span style="flex:1;font-family:'JetBrains Mono',monospace;color:#b3aea4">—</span><span style="flex:1;font-family:'JetBrains Mono',monospace;color:#b3aea4">—</span><span style="width:70px"><span style="font-size:10.5px;font-weight:600;color:#8a857c;background:#f0ece5;padding:2px 8px;border-radius:999px">disabled</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 7b : TERMINAL ===================== -->
+    <div class="dv-opt" id="7b">
+      <div class="dv-olabel"><a class="dv-oid" href="#7b">7b</a><b>Terminal</b> — dark technical console. Deep neutral background, phosphor-green signal, IBM Plex Mono throughout. Reads like the CLI these keys live in; dense, high-contrast, unapologetically for engineers.</div>
+      <div style="width:940px;border:1px solid #232a31;border-radius:10px;overflow:hidden;background:#0d0f12;color:#d7dde3;font-family:'IBM Plex Mono',ui-monospace,monospace">
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 20px;border-bottom:1px solid #1c2228;background:#101317">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:#fff"><span style="color:#4ade80">▸</span>apigate</div>
+          <div style="display:flex;gap:2px;font-size:12.5px">
+            <span style="padding:5px 11px;color:#4ade80;border-bottom:2px solid #4ade80">overview</span>
+            <span style="padding:5px 11px;color:#6b747d">apis</span>
+            <span style="padding:5px 11px;color:#3f464d">members</span>
+          </div>
+          <div style="margin:0 auto;display:flex;align-items:center;gap:8px;border:1px solid #2a323a;border-radius:6px;padding:5px 12px;font-size:12px;color:#d7dde3;background:#14181d">◇ personal <span style="color:#4ade80;font-size:10px">▾</span></div>
+          <div style="font-size:12px;color:#6b747d">me@acme.co</div>
+        </div>
+        <div style="padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:19px;font-weight:600;color:#fff">$ overview <span style="color:#4ade80">--personal</span></div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="display:flex;border:1px solid #2a323a;border-radius:6px;overflow:hidden;font-size:12px"><span style="padding:5px 11px;color:#6b747d">24h</span><span style="padding:5px 11px;background:#4ade80;color:#0d0f12;font-weight:600">7d</span><span style="padding:5px 11px;color:#6b747d">30d</span></div>
+              <div style="border:1px solid #4ade80;color:#4ade80;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600">+ add api</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:#6b747d;text-transform:uppercase;letter-spacing:.06em">requests</div><div style="font-size:23px;font-weight:600;color:#fff;margin-top:5px">128k</div><div style="font-size:10.5px;color:#4ade80;margin-top:2px">▲ 12%</div></div>
+            <div style="flex:1;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:#6b747d;text-transform:uppercase;letter-spacing:.06em">tokens</div><div style="font-size:23px;font-weight:600;color:#fff;margin-top:5px">9.4M</div><div style="font-size:10.5px;color:#4ade80;margin-top:2px">▲ 8%</div></div>
+            <div style="flex:1;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:#6b747d;text-transform:uppercase;letter-spacing:.06em">est. cost</div><div style="font-size:23px;font-weight:600;color:#fff;margin-top:5px">$47</div><div style="font-size:10.5px;color:#6b747d;margin-top:2px">~$.37/1k</div></div>
+            <div style="flex:1;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:#6b747d;text-transform:uppercase;letter-spacing:.06em">latency</div><div style="font-size:23px;font-weight:600;color:#fff;margin-top:5px">412ms</div><div style="font-size:10.5px;color:#6b747d;margin-top:2px">p95 980</div></div>
+            <div style="flex:1;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:12px 14px"><div style="font-size:10px;color:#6b747d;text-transform:uppercase;letter-spacing:.06em">errors</div><div style="font-size:23px;font-weight:600;color:#fff;margin-top:5px">0.8%</div><div style="font-size:10.5px;color:#f0a35e;margin-top:2px">1,024</div></div>
+          </div>
+          <div style="display:flex;gap:11px">
+            <div style="flex:2;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:14px 15px"><div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px"><span style="color:#fff;font-weight:600">requests over time</span><span style="color:#6b747d">hourly</span></div>
+              <svg viewBox="0 0 480 120" style="width:100%;height:120px;display:block"><defs><linearGradient id="gb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4ade80" stop-opacity=".22"/><stop offset="1" stop-color="#4ade80" stop-opacity="0"/></linearGradient></defs><path d="M0,90 L40,78 L80,84 L120,60 L160,66 L200,44 L240,52 L280,30 L320,40 L360,22 L400,34 L440,18 L480,26 L480,120 L0,120 Z" fill="url(#gb)"/><path d="M0,90 L40,78 L80,84 L120,60 L160,66 L200,44 L240,52 L280,30 L320,40 L360,22 L400,34 L440,18 L480,26" fill="none" stroke="#4ade80" stroke-width="2"/></svg>
+            </div>
+            <div style="flex:1;border:1px solid #1c2228;background:#12161a;border-radius:8px;padding:14px 15px"><div style="font-size:12px;color:#fff;font-weight:600;margin-bottom:12px">by api</div>
+              <div style="display:flex;align-items:center;gap:13px"><div style="width:80px;height:80px;border-radius:999px;background:conic-gradient(#4ade80 0 64%,#2f8f57 64% 88%,#1c3d2a 88% 100%)"></div><div style="font-size:11px;display:flex;flex-direction:column;gap:6px"><div><span style="color:#4ade80">■</span> openai 64%</div><div><span style="color:#2f8f57">■</span> anthropic 24%</div><div><span style="color:#1c3d2a">■</span> weather 12%</div></div></div>
+            </div>
+          </div>
+          <div style="border:1px solid #1c2228;background:#12161a;border-radius:8px;overflow:hidden">
+            <div style="display:flex;padding:9px 16px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b747d;border-bottom:1px solid #1c2228"><span style="flex:2">api</span><span style="flex:1">requests</span><span style="flex:1">tokens</span><span style="flex:1">cost</span><span style="width:70px">status</span></div>
+            <div style="display:flex;align-items:center;padding:10px 16px;font-size:12.5px;border-bottom:1px solid #171b20"><span style="flex:2;color:#fff">openai-prod</span><span style="flex:1">82,140</span><span style="flex:1">6.1M</span><span style="flex:1">$31</span><span style="width:70px"><span style="color:#4ade80">● active</span></span></div>
+            <div style="display:flex;align-items:center;padding:10px 16px;font-size:12.5px;border-bottom:1px solid #171b20"><span style="flex:2;color:#fff">anthropic</span><span style="flex:1">31,020</span><span style="flex:1">3.3M</span><span style="flex:1">$16</span><span style="width:70px"><span style="color:#4ade80">● active</span></span></div>
+            <div style="display:flex;align-items:center;padding:10px 16px;font-size:12.5px"><span style="flex:2;color:#fff">weather-api</span><span style="flex:1">15,300</span><span style="flex:1;color:#4b535b">—</span><span style="flex:1;color:#4b535b">—</span><span style="width:70px"><span style="color:#6b747d">○ disabled</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 7c : DAYLIGHT ===================== -->
+    <div class="dv-opt" id="7c">
+      <div class="dv-olabel"><a class="dv-oid" href="#7c">7c</a><b>Daylight</b> — friendly, light, rounded SaaS. Warm cream canvas, soft shadows, generous radius, a warm terracotta accent with tinted surfaces. Plus Jakarta Sans. Approachable for the "growing into a team" story.</div>
+      <div style="width:940px;border-radius:20px;overflow:hidden;background:#f4f1ea;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#2b2620;box-shadow:0 4px 24px rgba(60,45,30,.08)">
+        <div style="display:flex;align-items:center;gap:20px;padding:15px 22px;background:#fff">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;color:#2b2620"><span style="width:20px;height:20px;background:#e0722f;border-radius:7px;display:inline-block"></span>apigate</div>
+          <div style="display:flex;gap:3px;font-size:13px;font-weight:600">
+            <span style="padding:7px 14px;background:#fbeee4;color:#c25a1c;border-radius:999px">Overview</span>
+            <span style="padding:7px 14px;color:#8f877b">APIs</span>
+            <span style="padding:7px 14px;color:#c2bbae">Members</span>
+          </div>
+          <div style="margin:0 auto;display:flex;align-items:center;gap:8px;background:#f4f1ea;border-radius:999px;padding:7px 15px;font-size:13px;font-weight:700">◇ Personal <span style="color:#b3aa9a;font-size:10px">▾</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#8f877b"><span style="width:28px;height:28px;border-radius:999px;background:#efe9df;display:inline-block"></span></div>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between">
+            <div><div style="font-size:24px;font-weight:800;letter-spacing:-.02em">Overview</div><div style="font-size:13px;color:#8f877b;margin-top:3px;font-weight:500">Your APIs · last 7 days</div></div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="display:flex;background:#fff;border-radius:999px;overflow:hidden;font-size:12.5px;font-weight:600;padding:3px"><span style="padding:6px 13px;color:#8f877b">24h</span><span style="padding:6px 13px;background:#2b2620;color:#fff;border-radius:999px">7d</span><span style="padding:6px 13px;color:#8f877b">30d</span></div>
+              <div style="background:#e0722f;color:#fff;padding:9px 18px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(224,114,47,.3)">+ Add API</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1;background:#fff;border-radius:16px;padding:15px 17px"><div style="font-size:11.5px;color:#8f877b;font-weight:600">Requests</div><div style="font-size:25px;font-weight:800;margin-top:6px">128k</div><div style="font-size:11.5px;color:#2e9e63;font-weight:600;margin-top:2px">↑ 12%</div></div>
+            <div style="flex:1;background:#fff;border-radius:16px;padding:15px 17px"><div style="font-size:11.5px;color:#8f877b;font-weight:600">Tokens</div><div style="font-size:25px;font-weight:800;margin-top:6px">9.4M</div><div style="font-size:11.5px;color:#2e9e63;font-weight:600;margin-top:2px">↑ 8%</div></div>
+            <div style="flex:1;background:#fff;border-radius:16px;padding:15px 17px"><div style="font-size:11.5px;color:#8f877b;font-weight:600">Est. cost</div><div style="font-size:25px;font-weight:800;margin-top:6px">$47</div><div style="font-size:11.5px;color:#8f877b;font-weight:600;margin-top:2px">≈$0.37/1k</div></div>
+            <div style="flex:1;background:#fff;border-radius:16px;padding:15px 17px"><div style="font-size:11.5px;color:#8f877b;font-weight:600">Avg latency</div><div style="font-size:25px;font-weight:800;margin-top:6px">412ms</div><div style="font-size:11.5px;color:#8f877b;font-weight:600;margin-top:2px">p95 980</div></div>
+            <div style="flex:1;background:#fff;border-radius:16px;padding:15px 17px"><div style="font-size:11.5px;color:#8f877b;font-weight:600">Error rate</div><div style="font-size:25px;font-weight:800;margin-top:6px">0.8%</div><div style="font-size:11.5px;color:#8f877b;font-weight:600;margin-top:2px">1,024 err</div></div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="flex:2;background:#fff;border-radius:16px;padding:17px 18px"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:700">Requests over time</div><div style="font-size:12px;color:#8f877b;font-weight:600">hourly</div></div>
+              <svg viewBox="0 0 480 120" style="width:100%;height:120px;display:block"><defs><linearGradient id="gc" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e0722f" stop-opacity=".22"/><stop offset="1" stop-color="#e0722f" stop-opacity="0"/></linearGradient></defs><path d="M0,90 C40,78 60,84 120,60 C180,38 200,52 280,30 C340,15 380,34 480,26 L480,120 L0,120 Z" fill="url(#gc)"/><path d="M0,90 C40,78 60,84 120,60 C180,38 200,52 280,30 C340,15 380,34 480,26" fill="none" stroke="#e0722f" stroke-width="2.5"/></svg>
+            </div>
+            <div style="flex:1;background:#fff;border-radius:16px;padding:17px 18px"><div style="font-size:14px;font-weight:700;margin-bottom:14px">Requests by API</div>
+              <div style="display:flex;align-items:center;gap:14px"><div style="width:86px;height:86px;border-radius:999px;background:conic-gradient(#e0722f 0 64%,#f0a878 64% 88%,#f7d9c4 88% 100%)"></div><div style="font-size:12px;font-weight:600;display:flex;flex-direction:column;gap:7px"><div><span style="color:#e0722f">●</span> OpenAI</div><div><span style="color:#f0a878">●</span> Anthropic</div><div><span style="color:#f7d9c4">●</span> Weather</div></div></div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:16px;overflow:hidden;padding:6px 6px 8px">
+            <div style="display:flex;padding:11px 16px;font-size:11.5px;color:#8f877b;font-weight:700"><span style="flex:2">API</span><span style="flex:1">Requests</span><span style="flex:1">Tokens</span><span style="flex:1">Cost</span><span style="width:80px">Status</span></div>
+            <div style="display:flex;align-items:center;padding:12px 16px;font-size:13.5px;background:#faf8f4;border-radius:12px;margin:0 4px 5px"><span style="flex:2;font-weight:700">OpenAI prod</span><span style="flex:1;font-weight:500">82,140</span><span style="flex:1;font-weight:500">6.1M</span><span style="flex:1;font-weight:500">$31</span><span style="width:80px"><span style="font-size:11px;font-weight:700;color:#2e9e63;background:#e6f4ec;padding:3px 10px;border-radius:999px">active</span></span></div>
+            <div style="display:flex;align-items:center;padding:12px 16px;font-size:13.5px;background:#faf8f4;border-radius:12px;margin:0 4px 5px"><span style="flex:2;font-weight:700">Anthropic</span><span style="flex:1;font-weight:500">31,020</span><span style="flex:1;font-weight:500">3.3M</span><span style="flex:1;font-weight:500">$16</span><span style="width:80px"><span style="font-size:11px;font-weight:700;color:#2e9e63;background:#e6f4ec;padding:3px 10px;border-radius:999px">active</span></span></div>
+            <div style="display:flex;align-items:center;padding:12px 16px;font-size:13.5px;background:#faf8f4;border-radius:12px;margin:0 4px"><span style="flex:2;font-weight:700">Weather API</span><span style="flex:1;font-weight:500">15,300</span><span style="flex:1;color:#b3aa9a">—</span><span style="flex:1;color:#b3aa9a">—</span><span style="width:80px"><span style="font-size:11px;font-weight:700;color:#8f877b;background:#efe9df;padding:3px 10px;border-radius:999px">disabled</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "go hi-fi with <a class="dv-oid" href="#7a">7a</a>" · "7a but warmer accent from <a class="dv-oid" href="#7c">7c</a>" · "try a light version of the <a class="dv-oid" href="#7b">7b</a> console" · "show <a class="dv-oid" href="#7a">7a</a> on the API detail + mobile"</p>
+</section>
+<section class="dv-turn" id="t6">
+  <div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Mobile — how the top-nav shell collapses (dashboard, API detail, tokens)</span></div>
+  <div class="dv-opts">
+
+    <!-- ===== 6a : bottom tab bar ===== -->
+    <div class="dv-opt" id="6a">
+      <div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>Bottom tab bar. The top nav from <a class="dv-oid" href="#1b">1b</a> becomes a fixed bottom bar (Overview · APIs · Members · Account); the context switcher sits in a slim top bar. KPIs go 2-up, tables become cards.</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap">
+        <!-- dashboard -->
+        <div class="scr" style="width:290px;border-radius:26px;padding:8px">
+          <div class="scr" style="border-radius:18px;overflow:hidden;border-width:1.3px">
+            <div style="padding:9px 13px;border-bottom:1.3px solid #2b2b2b;display:flex;align-items:center;justify-content:space-between"><div class="pill" style="padding:4px 10px;font-size:11px">◇ Personal ▾</div><span style="font-size:14px">◔</span></div>
+            <div style="padding:12px 13px;display:flex;flex-direction:column;gap:11px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 15px system-ui">Overview</div><div class="seg" style="transform:scale(.85);transform-origin:right"><span class="on">24h</span><span>7d</span><span>30d</span></div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="kpi" style="padding:9px 10px"><div class="k">Requests</div><div class="v" style="font-size:18px">128k</div></div>
+                <div class="kpi" style="padding:9px 10px"><div class="k">Tokens</div><div class="v" style="font-size:18px">9.4M</div></div>
+                <div class="kpi" style="padding:9px 10px"><div class="k">Est. cost</div><div class="v" style="font-size:18px">$47</div></div>
+                <div class="kpi" style="padding:9px 10px"><div class="k">Err rate</div><div class="v" style="font-size:18px">0.8%</div></div>
+              </div>
+              <div class="box" style="height:100px">usage over time</div>
+              <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:10px 11px"><div style="font:700 11px system-ui;margin-bottom:5px">OpenAI prod <span class="tag on" style="font-size:8px">active</span></div><div style="font:11px system-ui;color:#8a8a8a">82k req · 6.1M tok · $31</div></div>
+              <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:10px 11px"><div style="font:700 11px system-ui;margin-bottom:5px">Anthropic <span class="tag on" style="font-size:8px">active</span></div><div style="font:11px system-ui;color:#8a8a8a">31k req · 3.3M tok · $16</div></div>
+            </div>
+            <div style="border-top:1.3px solid #2b2b2b;padding:9px 8px;display:flex;justify-content:space-around;font:600 9.5px system-ui"><span style="color:#2b2b2b">▤<br>Overview</span><span style="color:#9a9a9a">⚿<br>APIs</span><span style="color:#9a9a9a">☰<br>Members</span><span style="color:#9a9a9a">◔<br>Account</span></div>
+          </div>
+        </div>
+        <!-- API detail usage -->
+        <div class="scr" style="width:290px;border-radius:26px;padding:8px">
+          <div class="scr" style="border-radius:18px;overflow:hidden;border-width:1.3px">
+            <div style="padding:9px 13px;border-bottom:1.3px solid #2b2b2b;display:flex;align-items:center;gap:8px"><span style="font-size:14px">‹</span><div style="font:700 13px system-ui">OpenAI prod</div><span class="tag" style="font-size:8px;margin-left:auto">••••4f2a</span></div>
+            <div style="padding:9px 13px 0;display:flex;gap:5px;border-bottom:1.3px solid #2b2b2b;overflow:hidden"><div class="tab on" style="padding:5px 9px;font-size:10px">Usage</div><div class="tab" style="padding:5px 9px;font-size:10px">Tokens</div><div class="tab" style="padding:5px 9px;font-size:10px;opacity:.4">Access</div></div>
+            <div style="padding:12px 13px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="kpi" style="padding:9px 10px"><div class="k">Requests</div><div class="v" style="font-size:17px">82k</div></div>
+                <div class="kpi" style="padding:9px 10px"><div class="k">Tokens</div><div class="v" style="font-size:17px">6.1M</div></div>
+              </div>
+              <div class="box" style="height:96px">usage over time</div>
+              <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:10px 11px"><div style="font:700 10px system-ui;margin-bottom:6px">Recent</div><div class="rowln" style="border-top:none;font-size:10px;padding:5px 0">/chat/completions<span style="margin-left:auto" class="tag on" style="font-size:8px">200</span></div><div class="rowln" style="font-size:10px;padding:5px 0">/embeddings<span style="margin-left:auto" class="tag" style="font-size:8px">429</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 6b : header + sheet, single scroll ===== -->
+    <div class="dv-opt" id="6b">
+      <div class="dv-olabel"><a class="dv-oid" href="#6b">6b</a>No bottom bar — a header with hamburger opens a nav sheet (context switcher lives inside it). More screen for content; matches the single-scroll detail idea from <a class="dv-oid" href="#2c">2c</a>. Shown: nav sheet open + the token-reveal on mobile.</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap">
+        <!-- nav sheet open -->
+        <div class="scr" style="width:290px;border-radius:26px;padding:8px">
+          <div class="scr" style="border-radius:18px;overflow:hidden;border-width:1.3px;position:relative">
+            <div style="padding:10px 13px;border-bottom:1.3px solid #2b2b2b;display:flex;align-items:center;gap:10px"><span style="font-size:15px">✕</span><div style="font:800 13px system-ui">◈ apigate</div></div>
+            <div style="padding:14px 15px;display:flex;flex-direction:column;gap:9px">
+              <div class="anno">context switcher inside the sheet</div>
+              <div class="pill" style="justify-content:space-between">◇ Personal ▾</div>
+              <div class="navi on" style="margin-top:4px">▤ Overview</div>
+              <div class="navi">⚿ APIs</div>
+              <div class="navi" style="opacity:.4">☰ Members (team only)</div>
+              <div class="hr" style="margin:6px 0"></div>
+              <div class="navi">◔ Account</div>
+              <div class="navi">⚙ Team settings</div>
+              <div class="navi">⏻ Log out</div>
+            </div>
+          </div>
+        </div>
+        <!-- token reveal mobile -->
+        <div class="scr" style="width:290px;border-radius:26px;padding:8px">
+          <div class="scr" style="border-radius:18px;overflow:hidden;border-width:1.3px">
+            <div style="padding:10px 13px;border-bottom:1.3px solid #2b2b2b;display:flex;align-items:center;gap:8px"><span style="font-size:15px">≡</span><div style="font:700 13px system-ui">OpenAI prod · Tokens</div></div>
+            <div style="padding:13px;display:flex;flex-direction:column;gap:11px">
+              <div style="font:700 13px system-ui">Token created ✓</div>
+              <div class="box warn" style="border-color:#e0b48a;background:#fbf3ea;color:#a5642a;justify-content:flex-start;font-family:'Caveat',cursive;font-size:14px;padding:8px 10px">⚠ Copy now — shown once.</div>
+              <div style="border:1.5px solid #2b2b2b;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;background:#f7f5f1"><span style="font-family:ui-monospace,monospace;font-size:11px;word-break:break-all">xpxy_live_8fK2p…4f2aQ9</span><div class="btn" style="text-align:center">⧉ Copy</div></div>
+              <div class="box" style="height:auto;justify-content:flex-start;text-align:left;padding:10px;font-size:10px;line-height:1.6">curl …/proxy \<br>-H "Authorization: Bearer xpxy_live_…"</div>
+              <div class="btn" style="text-align:center">Done</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "these all look good — take one of each screen to hi-fi" · "add a tablet breakpoint" · "revise <a class="dv-oid" href="#6a">6a</a> with a floating + Add-API button"</p>
+</section>
+<section class="dv-turn" id="t5">
+  <div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Login &amp; sign up — two treatments (email + password only; no verify / reset in v1)</span></div>
+  <div class="dv-opts">
+
+    <!-- ===== 5a : centered minimal ===== -->
+    <div class="dv-opt" id="5a">
+      <div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Centered card, minimal. Same frame for both states; a link toggles login ↔ signup. Signup adds only a confirm/length hint. Fast, no distractions.</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap">
+        <div class="scr" style="width:360px">
+          <div class="anno" style="padding:9px 16px 0">Log in</div>
+          <div style="padding:22px 22px 26px;display:flex;flex-direction:column;gap:13px;align-items:center">
+            <div style="font:800 17px system-ui">◈ apigate</div>
+            <div style="font:700 16px system-ui;margin-top:4px">Welcome back</div>
+            <div style="width:100%"><div style="font:700 11px system-ui;margin-bottom:5px">Email</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">you@company.com</div></div>
+            <div style="width:100%"><div style="font:700 11px system-ui;margin-bottom:5px">Password</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">••••••••</div></div>
+            <div class="btn" style="width:100%;text-align:center;box-sizing:border-box">Log in</div>
+            <div style="font:12px system-ui;color:#6a6a6a">No account? <b style="color:#2a78d6">Sign up</b></div>
+          </div>
+        </div>
+        <div class="scr" style="width:360px">
+          <div class="anno" style="padding:9px 16px 0">Sign up</div>
+          <div style="padding:22px 22px 26px;display:flex;flex-direction:column;gap:13px;align-items:center">
+            <div style="font:800 17px system-ui">◈ apigate</div>
+            <div style="font:700 16px system-ui;margin-top:4px">Create your account</div>
+            <div style="width:100%"><div style="font:700 11px system-ui;margin-bottom:5px">Email</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">you@company.com</div></div>
+            <div style="width:100%"><div style="font:700 11px system-ui;margin-bottom:5px">Password</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">••••••••</div><div class="anno" style="margin-top:5px">min 8 characters · no email verification in v1</div></div>
+            <div class="btn" style="width:100%;text-align:center;box-sizing:border-box">Create account</div>
+            <div style="font:12px system-ui;color:#6a6a6a">Have an account? <b style="color:#2a78d6">Log in</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 5b : split panel ===== -->
+    <div class="dv-opt" id="5b">
+      <div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>Split panel. Form on the left, product context on the right (reinforces the pitch during signup). Doubles as the landing target for an <a class="dv-oid" href="#3b">invite link</a> — right panel swaps to the team/role preview.</div>
+      <div class="scr" style="width:640px">
+        <div style="display:flex;min-height:360px">
+          <div style="flex:1;padding:26px 24px;display:flex;flex-direction:column;gap:13px;justify-content:center;border-right:1.4px solid #2b2b2b">
+            <div style="font:800 16px system-ui">◈ apigate</div>
+            <div style="font:700 17px system-ui;margin-top:2px">Create your account</div>
+            <div><div style="font:700 11px system-ui;margin-bottom:5px">Email</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">you@company.com</div></div>
+            <div><div style="font:700 11px system-ui;margin-bottom:5px">Password</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">••••••••</div><div class="anno" style="margin-top:5px">min 8 chars</div></div>
+            <div class="btn" style="text-align:center">Create account</div>
+            <div style="font:12px system-ui;color:#6a6a6a">Have an account? <b style="color:#2a78d6">Log in</b></div>
+          </div>
+          <div style="flex:1;padding:26px 24px;background:#f5f3ef;display:flex;flex-direction:column;gap:12px;justify-content:center">
+            <div class="anno">context panel — pitch, or invite preview when arriving via /invite/&lt;token&gt;</div>
+            <div style="font:700 15px/1.3 system-ui">Hand out proxy tokens, never real keys.</div>
+            <div class="rowln" style="border-top:none;font-size:12px"><span class="dot"></span>Encrypted custody</div>
+            <div class="rowln" style="font-size:12px"><span class="dot"></span>One gateway, any API</div>
+            <div class="rowln" style="font-size:12px"><span class="dot"></span>Live usage analytics</div>
+            <div class="box" style="height:90px;margin-top:6px">dashboard peek</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "mobile versions of the dashboard &amp; API detail" · "show the session-expired → redirect-to-login state" · "go with <a class="dv-oid" href="#5a">5a</a>"</p>
+</section>
+<section class="dv-turn" id="t4">
+  <div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Marketing / landing page — two long-scroll structures</span></div>
+  <div class="dv-opts">
+
+    <!-- ===== 4a : conventional SaaS scroll ===== -->
+    <div class="dv-opt" id="4a">
+      <div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Conventional SaaS long-scroll. Value-prop hero → capability strip → how-it-works → features → architecture → security → FAQ → CTA. Safe, SEO-friendly, scannable.</div>
+      <div class="scr" style="width:600px">
+        <!-- nav -->
+        <div style="border-bottom:1.4px solid #2b2b2b;padding:12px 18px;display:flex;align-items:center;gap:14px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:14px;font:600 11.5px system-ui;color:#6a6a6a;margin-left:8px"><span>Features</span><span>How it works</span><span>Security</span><span>FAQ</span></div>
+          <div style="margin-left:auto;display:flex;gap:8px"><div class="btn ghost" style="padding:5px 11px">Log in</div><div class="btn" style="padding:5px 11px">Sign up</div></div>
+        </div>
+        <!-- hero -->
+        <div style="padding:34px 24px;text-align:center;border-bottom:1.2px solid rgba(0,0,0,.1);display:flex;flex-direction:column;gap:12px;align-items:center">
+          <div style="font:800 26px/1.15 system-ui;max-width:420px">Hand out proxy tokens, never your real API keys.</div>
+          <div style="font:14px/1.5 system-ui;color:#6a6a6a;max-width:400px">Register any HTTP API once. Get a safe token to share. Watch every call — requests, tokens, cost, latency.</div>
+          <div style="display:flex;gap:9px;margin-top:4px"><div class="btn">Start free</div><div class="btn ghost">See how it works</div></div>
+          <div class="box" style="width:100%;max-width:460px;height:150px;margin-top:12px">product screenshot — dashboard</div>
+        </div>
+        <!-- capability strip -->
+        <div style="padding:16px 24px;border-bottom:1.2px solid rgba(0,0,0,.1);display:flex;gap:10px">
+          <div class="kpi" style="text-align:center"><div style="font:700 12px system-ui">Credential custody</div><div style="font:10.5px system-ui;color:#8a8a8a;margin-top:3px">encrypted, never re-shown</div></div>
+          <div class="kpi" style="text-align:center"><div style="font:700 12px system-ui">Reverse proxy</div><div style="font:10.5px system-ui;color:#8a8a8a;margin-top:3px">one gateway, any API</div></div>
+          <div class="kpi" style="text-align:center"><div style="font:700 12px system-ui">Usage analytics</div><div style="font:10.5px system-ui;color:#8a8a8a;margin-top:3px">per API, token, member</div></div>
+        </div>
+        <!-- how it works -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)">
+          <div style="font:700 16px system-ui;text-align:center;margin-bottom:16px">How it works</div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;text-align:center"><div style="font:800 20px system-ui;color:#c9c5bd">1</div><div style="font:600 11px system-ui;margin-top:4px">Register an API</div></div>
+            <div style="flex:1;text-align:center"><div style="font:800 20px system-ui;color:#c9c5bd">2</div><div style="font:600 11px system-ui;margin-top:4px">Get a proxy token</div></div>
+            <div style="flex:1;text-align:center"><div style="font:800 20px system-ui;color:#c9c5bd">3</div><div style="font:600 11px system-ui;margin-top:4px">Call the proxy</div></div>
+            <div style="flex:1;text-align:center"><div style="font:800 20px system-ui;color:#c9c5bd">4</div><div style="font:600 11px system-ui;margin-top:4px">Watch usage</div></div>
+          </div>
+        </div>
+        <!-- features grid -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)">
+          <div style="font:700 16px system-ui;text-align:center;margin-bottom:14px">Everything included</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+            <div class="box" style="height:60px">SSE streaming</div><div class="box" style="height:60px">token rotation</div><div class="box" style="height:60px">instant revoke</div>
+            <div class="box" style="height:60px">teams &amp; roles</div><div class="box" style="height:60px">per-API grants</div><div class="box" style="height:60px">cost estimates</div>
+          </div>
+        </div>
+        <!-- architecture -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)"><div style="font:700 16px system-ui;text-align:center;margin-bottom:14px">Architecture</div><div class="box" style="height:120px">client → proxy token → gateway (key swap in memory) → upstream · logs after last byte</div></div>
+        <!-- security -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1);display:flex;gap:14px;align-items:center"><div class="box" style="width:120px;height:90px">🔒 diagram</div><div><div style="font:700 15px system-ui;margin-bottom:6px">Secrets stay secret</div><div style="font:12px/1.5 system-ui;color:#6a6a6a">AES/Fernet at rest · decrypted only in memory · only last 4 shown · one-way tokens.</div></div></div>
+        <!-- FAQ -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)"><div style="font:700 16px system-ui;margin-bottom:12px">FAQ</div><div class="rowln" style="border-top:none">Does it work with non-LLM APIs? <span style="margin-left:auto">＋</span></div><div class="rowln">Is there billing / quotas? <span style="margin-left:auto">＋</span></div><div class="rowln">How are keys stored? <span style="margin-left:auto">＋</span></div></div>
+        <!-- CTA -->
+        <div style="padding:30px 24px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font:800 19px system-ui">Stop pasting real keys everywhere.</div><div class="btn">Start free</div></div>
+      </div>
+    </div>
+
+    <!-- ===== 4b : proxy-concept-first ===== -->
+    <div class="dv-opt" id="4b">
+      <div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Concept-first. The hero <i>is</i> the key-swap: a before/after code diff showing a real key replaced by <code>xpxy_live_…</code>. Leads with the "aha", then proof (live dashboard), then trust (security) high up.</div>
+      <div class="scr" style="width:600px">
+        <div style="border-bottom:1.4px solid #2b2b2b;padding:12px 18px;display:flex;align-items:center;gap:14px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="margin-left:auto;display:flex;gap:8px"><div class="btn ghost" style="padding:5px 11px">Log in</div><div class="btn" style="padding:5px 11px">Sign up</div></div>
+        </div>
+        <!-- concept hero -->
+        <div style="padding:30px 24px;border-bottom:1.2px solid rgba(0,0,0,.1);display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center">
+          <div style="font:800 24px/1.15 system-ui;max-width:430px">One line to swap. Zero keys leaked.</div>
+          <div style="display:flex;gap:12px;width:100%;max-width:480px;align-items:stretch">
+            <div class="box" style="flex:1;height:auto;padding:12px;flex-direction:column;justify-content:center;line-height:1.7;color:#b06a5a;border-color:#d9a08f">- Bearer sk-live-REAL-KEY<br><span style="opacity:.5">exposed everywhere</span></div>
+            <div style="align-self:center;font:800 18px system-ui">→</div>
+            <div class="box" style="flex:1;height:auto;padding:12px;flex-direction:column;justify-content:center;line-height:1.7;color:#3a7a52;border-color:#8fc0a0">+ Bearer xpxy_live_…<br><span style="opacity:.6">safe · logged · revocable</span></div>
+          </div>
+          <div class="btn" style="margin-top:4px">Start free</div>
+        </div>
+        <!-- proof: dashboard -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)"><div style="font:700 15px system-ui;text-align:center;margin-bottom:12px">See every call the moment it happens</div><div class="box" style="height:170px">live dashboard — KPIs + charts</div></div>
+        <!-- trust high up -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1);display:flex;gap:10px">
+          <div class="box" style="flex:1;height:74px;flex-direction:column">🔒<br><span style="font-family:system-ui;font-weight:700;font-size:11px;color:#2b2b2b">encrypted at rest</span></div>
+          <div class="box" style="flex:1;height:74px;flex-direction:column">👁<br><span style="font-family:system-ui;font-weight:700;font-size:11px;color:#2b2b2b">only last 4 shown</span></div>
+          <div class="box" style="flex:1;height:74px;flex-direction:column">⏻<br><span style="font-family:system-ui;font-weight:700;font-size:11px;color:#2b2b2b">revoke instantly</span></div>
+        </div>
+        <!-- how it works compact -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)"><div style="font:700 15px system-ui;margin-bottom:12px">From key to insight in 4 steps</div><div style="display:flex;flex-direction:column;gap:7px"><div class="rowln" style="border-top:none"><span class="dot"></span>Register an API once</div><div class="rowln"><span class="dot"></span>Mint a proxy token</div><div class="rowln"><span class="dot"></span>Point your app at the gateway</div><div class="rowln"><span class="dot"></span>Watch usage roll in</div></div></div>
+        <!-- teams tease -->
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1);display:flex;gap:14px;align-items:center"><div><div style="font:700 15px system-ui;margin-bottom:5px">Grow into a team when you're ready</div><div style="font:12px/1.5 system-ui;color:#6a6a6a">Invite colleagues, share specific APIs, monitor per-member usage. Opt-in — nothing changes if you don't.</div></div><div class="box" style="width:130px;height:80px">teams</div></div>
+        <div style="padding:24px;border-bottom:1.2px solid rgba(0,0,0,.1)"><div style="font:700 15px system-ui;margin-bottom:10px">FAQ</div><div class="rowln" style="border-top:none">Works with any HTTP API? <span style="margin-left:auto">＋</span></div><div class="rowln">Self-hosted? <span style="margin-left:auto">＋</span></div></div>
+        <div style="padding:30px 24px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font:800 19px system-ui">Your keys, finally under control.</div><div class="btn">Start free</div></div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "go with <a class="dv-oid" href="#4a">4a</a>'s structure but <a class="dv-oid" href="#4b">4b</a>'s code-diff hero" · "now login + signup" · "mobile dashboard next"</p>
+</section>
+<section class="dv-turn" id="t3">
+  <div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Flows &amp; teams — Add/attach API · Members + invite · per-API Access grants · per-member detail</span></div>
+  <div class="dv-opts">
+
+    <!-- ===== 3a : Add API / attach ===== -->
+    <div class="dv-opt" id="3a">
+      <div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a><b>Add API</b> modal. In a team it gains a top choice: <i>Create new</i> vs <i>Attach one of my personal APIs</i> (one-way move, carries tokens + history). Secret is write-only; helper text sets the "shown once" expectation.</div>
+      <div class="scr" style="width:520px">
+        <div style="padding:15px 18px;border-bottom:1.3px solid #2b2b2b;display:flex;justify-content:space-between;align-items:center"><div style="font:700 15px system-ui">Add API</div><span style="font:600 14px">✕</span></div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:13px">
+          <div class="seg" style="align-self:flex-start"><span class="on">Create new</span><span>Attach existing personal API</span></div>
+          <div class="anno">2nd option only shows in Team mode</div>
+          <div><div style="font:700 11px system-ui;margin-bottom:5px">Display name</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">e.g. OpenAI prod</div></div>
+          <div><div style="font:700 11px system-ui;margin-bottom:5px">Upstream base URL</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">https://api.openai.com</div></div>
+          <div><div style="font:700 11px system-ui;margin-bottom:5px">Secret key</div><div class="box" style="height:34px;justify-content:flex-start;padding-left:11px">sk-••••••••••••••••••</div><div class="anno" style="margin-top:5px">encrypted at rest · only last 4 shown afterward · never asks the provider</div></div>
+          <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:2px"><div class="btn ghost">Cancel</div><div class="btn">Add API</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3b : Members tab + invite ===== -->
+    <div class="dv-opt" id="3b">
+      <div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a><b>Members</b> tab (appears only when a team is active, on the dashboard — not a settings maze). Team-wide KPIs + per-member usage breakdown, invite via one-time claim link, and the public <code>/invite/&lt;token&gt;</code> preview.</div>
+      <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+        <div class="scr" style="width:700px">
+          <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:16px">
+            <div style="font:800 15px system-ui">◈ apigate</div>
+            <div style="display:flex;gap:4px"><div class="navi" style="padding:6px 12px">Overview</div><div class="navi" style="padding:6px 12px">APIs</div><div class="navi on" style="padding:6px 12px">Members</div></div>
+            <div style="margin:0 auto"><div class="pill">◈ Acme Team ▾ <span style="font-size:9px;opacity:.6">owner</span></div></div>
+          </div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;gap:13px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 15px system-ui">Members</div><div class="btn">+ Invite member</div></div>
+            <div style="display:flex;gap:9px">
+              <div class="kpi"><div class="k">Team requests</div><div class="v">311k</div></div>
+              <div class="kpi"><div class="k">Tokens</div><div class="v">24M</div></div>
+              <div class="kpi"><div class="k">Est. cost</div><div class="v">$118</div></div>
+              <div class="kpi"><div class="k">Error rate</div><div class="v">0.6%</div></div>
+            </div>
+            <div class="anno">per-member breakdown across every API the team owns</div>
+            <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+              <div class="rowln" style="border-top:none;font-size:11px;color:#8a8a8a;font-weight:700"><span style="width:200px">member</span><span style="width:80px">role</span><span style="width:80px">joined</span><span style="width:90px">requests</span><span style="margin-left:auto">&nbsp;</span></div>
+              <div class="rowln" style="font-size:11.5px"><span style="width:200px">me@acme.co</span><span style="width:80px"><span class="tag on" style="font-size:9px">owner</span></span><span style="width:80px;color:#8a8a8a">Jan 4</span><span style="width:90px">140k</span><span style="margin-left:auto"><a href="#3d" class="btn ghost" style="padding:3px 8px;text-decoration:none">View details</a></span></div>
+              <div class="rowln" style="font-size:11.5px"><span style="width:200px">dev@acme.co</span><span style="width:80px"><span class="tag" style="font-size:9px">admin ▾</span></span><span style="width:80px;color:#8a8a8a">Feb 1</span><span style="width:90px">96k</span><span style="margin-left:auto"><a href="#3d" class="btn ghost" style="padding:3px 8px;text-decoration:none">View details</a></span></div>
+              <div class="rowln" style="font-size:11.5px"><span style="width:200px">intern@acme.co</span><span style="width:80px"><span class="tag" style="font-size:9px">member ▾</span></span><span style="width:80px;color:#8a8a8a">Jun 9</span><span style="width:90px">75k</span><span style="margin-left:auto"><a href="#3d" class="btn ghost" style="padding:3px 8px;text-decoration:none">View details</a></span></div>
+              <div class="rowln" style="font-size:11.5px;color:#8a8a8a"><span style="width:200px">new@acme.co</span><span style="width:80px"><span class="tag" style="font-size:9px">member · pending</span></span><span style="width:80px">—</span><span style="width:90px">—</span><span style="margin-left:auto" class="btn ghost" style="padding:3px 8px">Revoke invite</span></div>
+              <div class="anno" style="margin-top:8px">role menus enforce rules: admins can't demote/remove other admins — owner-only</div>
+            </div>
+          </div>
+        </div>
+        <!-- invite modal + claim link + public preview stacked -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="scr" style="width:400px">
+            <div style="padding:13px 16px;border-bottom:1.3px solid #2b2b2b;font:700 14px system-ui">Invite member</div>
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:11px">
+              <div><div style="font:700 11px system-ui;margin-bottom:5px">Email</div><div class="box" style="height:32px;justify-content:flex-start;padding-left:10px">new@acme.co</div></div>
+              <div><div style="font:700 11px system-ui;margin-bottom:5px">Role</div><div class="seg"><span>Admin</span><span class="on">Member</span></div></div>
+              <div style="border-top:1.2px solid rgba(0,0,0,.12);padding-top:11px"><div class="anno" style="margin-bottom:6px">no emails sent — you get a one-time link to share:</div>
+                <div style="border:1.5px solid #2b2b2b;border-radius:7px;padding:9px 10px;display:flex;align-items:center;gap:8px;background:#f7f5f1"><span style="font-family:ui-monospace,monospace;font-size:11px">apigate.io/invite/9fK2…</span><span class="btn" style="margin-left:auto;padding:4px 9px">⧉ Copy</span></div>
+                <div class="anno" style="margin-top:6px">expires in 7 days · bound to this email</div>
+              </div>
+            </div>
+          </div>
+          <div class="scr" style="width:400px">
+            <div class="anno" style="padding:9px 14px 0">public /invite/&lt;token&gt; — no login required</div>
+            <div style="padding:20px 18px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center">
+              <div style="font:800 16px system-ui">◈ apigate</div>
+              <div style="font:13px system-ui;color:#6a6a6a">You've been invited to join</div>
+              <div style="font:700 18px system-ui">Acme Team</div>
+              <span class="tag">as Member</span>
+              <div class="btn" style="margin-top:4px">Log in or sign up to accept</div>
+              <div class="anno">preview shows team + role before signup</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3c : per-API Access grants ===== -->
+    <div class="dv-opt" id="3c">
+      <div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>An API's <b>Access</b> tab (team mode, owner/admin). Per-person, per-API grant toggles. Owners/admins always have access (shown, locked). Revoke = deny-at-proxy, tokens kept.</div>
+      <div class="scr" style="width:700px">
+        <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:16px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:4px"><div class="navi" style="padding:6px 12px">Overview</div><div class="navi on" style="padding:6px 12px">APIs</div><div class="navi" style="padding:6px 12px">Members</div></div>
+          <div style="margin:0 auto"><div class="pill">◈ Acme Team ▾</div></div>
+        </div>
+        <div style="padding:13px 20px;border-bottom:1.2px solid rgba(0,0,0,.12);font:700 16px system-ui">OpenAI prod</div>
+        <div style="padding:13px 20px 0;display:flex;gap:6px;border-bottom:1.3px solid #2b2b2b"><div class="tab">Usage</div><div class="tab">Access Tokens</div><div class="tab on">Access</div></div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+          <div style="font:700 12px system-ui">Who can use this API</div>
+          <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:6px 12px">
+            <div class="rowln" style="border-top:none"><span>me@acme.co</span><span class="tag" style="font-size:9px">owner</span><span style="margin-left:auto;font:600 11px system-ui;color:#7a7a7a">Always · 🔒</span></div>
+            <div class="rowln"><span>dev@acme.co</span><span class="tag" style="font-size:9px">admin</span><span style="margin-left:auto;font:600 11px system-ui;color:#7a7a7a">Always · 🔒</span></div>
+            <div class="rowln"><span>intern@acme.co</span><span class="tag" style="font-size:9px">member</span><span style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font:600 11px system-ui">granted</span><div style="width:34px;height:19px;border:1.4px solid #2b2b2b;border-radius:999px;background:#2b2b2b;position:relative"><div style="width:13px;height:13px;background:#fff;border-radius:999px;position:absolute;top:2px;right:2px"></div></div></span></div>
+            <div class="rowln"><span>ops@acme.co</span><span class="tag" style="font-size:9px">member</span><span style="margin-left:auto;display:flex;align-items:center;gap:8px"><span style="font:600 11px system-ui;color:#9a9a9a">not granted</span><div style="width:34px;height:19px;border:1.4px solid #2b2b2b;border-radius:999px;background:#fff;position:relative"><div style="width:13px;height:13px;background:#2b2b2b;border-radius:999px;position:absolute;top:2px;left:2px"></div></div></span></div>
+          </div>
+          <div class="box warn" style="border-color:#e0b48a;background:#fbf3ea;color:#a5642a;justify-content:flex-start;font-family:'Caveat',cursive;font-size:15px;padding:8px 11px">toggling off = that member's tokens rejected (403) on the very next call — tokens are kept, re-granting makes them work again instantly</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3d : per-member detail ===== -->
+    <div class="dv-opt" id="3d">
+      <div class="dv-olabel"><a class="dv-oid" href="#3d">3d</a>Read-only <b>per-member</b> page (from "View details" in <a class="dv-oid" href="#3b">3b</a>). One person's KPIs, usage-over-time, requests-by-API, and their granted APIs — "Always" for admins/owners, "Granted" for members. Reviewing only; granting still happens on <a class="dv-oid" href="#3c">3c</a>.</div>
+      <div class="scr" style="width:700px">
+        <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:16px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:4px"><div class="navi" style="padding:6px 12px">Overview</div><div class="navi" style="padding:6px 12px">APIs</div><div class="navi on" style="padding:6px 12px">Members</div></div>
+          <div style="margin:0 auto"><div class="pill">◈ Acme Team ▾</div></div>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:13px">
+          <div style="font:12px system-ui;color:#8a8a8a">Members / <b style="color:#2b2b2b">intern@acme.co</b> <span class="tag" style="font-size:9px;margin-left:6px">member</span> <span style="color:#c98a3a;font-weight:600;margin-left:8px">read-only</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 17px system-ui">intern@acme.co</div><div class="seg"><span>24h</span><span class="on">7d</span><span>30d</span></div></div>
+          <div style="display:flex;gap:9px">
+            <div class="kpi"><div class="k">Requests</div><div class="v">75k</div></div>
+            <div class="kpi"><div class="k">Tokens</div><div class="v">5.2M</div></div>
+            <div class="kpi"><div class="k">Est. cost</div><div class="v">$24</div></div>
+            <div class="kpi"><div class="k">Error rate</div><div class="v">0.9%</div></div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div class="box" style="flex:2;height:118px">their usage over time</div>
+            <div class="box" style="flex:1;height:118px">requests by API ◕</div>
+          </div>
+          <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+            <div style="font:700 11px system-ui;margin-bottom:4px">APIs they can use</div>
+            <div class="rowln" style="border-top:none;font-size:11.5px"><span>OpenAI prod</span><span class="tag" style="font-size:9px;margin-left:8px">Granted</span><span style="margin-left:auto;color:#8a8a8a">60k req · 4.4M tok</span></div>
+            <div class="rowln" style="font-size:11.5px"><span>Weather API</span><span class="tag" style="font-size:9px;margin-left:8px">Granted</span><span style="margin-left:auto;color:#8a8a8a">15k req · —</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "now the marketing / landing page" · "login + signup screens" · "mobile versions of the dashboard" · "show the destructive delete-team confirmation"</p>
+</section>
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">API detail screen on the <a class="dv-oid" href="#1b">1b</a> top-nav shell — two IA approaches + the mint-token moment</span></div>
+  <div class="dv-opts">
+
+    <!-- ===== 2a : TABBED — Usage tab ===== -->
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Tabbed detail. Header carries identity + config actions; tabs split Usage / Access Tokens / Access. Landing tab is <b>Usage</b>. "Access" tab is greyed in Personal mode (team-only).</div>
+      <div class="scr" style="width:940px">
+        <!-- shell header -->
+        <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:18px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:4px"><div class="navi" style="padding:6px 12px">Overview</div><div class="navi on" style="padding:6px 12px">APIs</div><div class="navi" style="padding:6px 12px;opacity:.4">Members</div></div>
+          <div style="margin:0 auto"><div class="pill">◇ Personal <span style="font-size:9px">▾</span></div></div>
+          <div class="navi" style="padding:6px 10px">◔ me@acme.co ▾</div>
+        </div>
+        <!-- API header -->
+        <div style="padding:16px 20px;border-bottom:1.2px solid rgba(0,0,0,.12)">
+          <div style="font:12px system-ui;color:#8a8a8a;margin-bottom:8px">Overview / APIs / <b style="color:#2b2b2b">OpenAI prod</b></div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="font:700 19px system-ui">OpenAI prod ✎</div>
+            <span class="tag">base: api.openai.com</span>
+            <span class="tag">key ••••4f2a</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:9px">
+              <span style="font:600 11px system-ui;color:#7a7a7a">active</span>
+              <div style="width:34px;height:19px;border:1.4px solid #2b2b2b;border-radius:999px;background:#2b2b2b;position:relative"><div style="width:13px;height:13px;background:#fff;border-radius:999px;position:absolute;top:2px;right:2px"></div></div>
+              <div class="btn ghost">Rotate key</div>
+              <div class="btn ghost" style="padding:6px 9px">•••</div>
+            </div>
+          </div>
+          <div class="anno" style="margin-top:7px">••• menu → Disable (reversible, tokens start rejecting instantly) · Delete (cascades tokens + grants)</div>
+        </div>
+        <!-- tabs -->
+        <div style="padding:14px 20px 0;display:flex;gap:6px;border-bottom:1.3px solid #2b2b2b">
+          <div class="tab on">Usage</div><div class="tab">Access Tokens</div><div class="tab" style="opacity:.4">Access <span class="anno" style="font-size:11px">team only</span></div>
+        </div>
+        <!-- usage body -->
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:13px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 13px system-ui">Usage</div><div class="seg"><span>24h</span><span class="on">7d</span><span>30d</span></div></div>
+          <div style="display:flex;gap:9px">
+            <div class="kpi"><div class="k">Requests</div><div class="v">82k</div></div>
+            <div class="kpi"><div class="k">Tokens</div><div class="v">6.1M</div></div>
+            <div class="kpi"><div class="k">Est. cost</div><div class="v">$31</div></div>
+            <div class="kpi"><div class="k">Avg latency</div><div class="v">380ms</div></div>
+            <div class="kpi"><div class="k">Error rate</div><div class="v">0.5%</div></div>
+          </div>
+          <div class="box" style="height:130px">usage over time — daily buckets (7d)</div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1;border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+              <div style="font:700 11px system-ui;margin-bottom:8px">Status codes</div>
+              <div class="box" style="height:64px">2xx ▓▓▓▓▓ · 4xx ▪ · 5xx ▪</div>
+            </div>
+            <div style="flex:1;border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+              <div style="font:700 11px system-ui;margin-bottom:8px">Models used</div>
+              <div class="rowln" style="border-top:none;padding:5px 0"><span class="dot"></span>gpt-4o<span style="margin-left:auto;color:#8a8a8a">58%</span></div>
+              <div class="rowln" style="padding:5px 0"><span class="dot" style="background:#bbb"></span>gpt-4o-mini<span style="margin-left:auto;color:#8a8a8a">42%</span></div>
+            </div>
+          </div>
+          <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+            <div style="font:700 11px system-ui;margin-bottom:4px">Recent requests</div>
+            <div class="rowln" style="border-top:none;font-size:11px;color:#8a8a8a;font-weight:700"><span style="width:70px">time</span><span style="width:130px">path</span><span style="width:90px">model</span><span style="width:70px">tokens</span><span style="width:50px">ms</span><span style="margin-left:auto">status</span></div>
+            <div class="rowln" style="font-size:11px"><span style="width:70px">12:04:11</span><span style="width:130px">/v1/chat/completions</span><span style="width:90px">gpt-4o</span><span style="width:70px">1,204</span><span style="width:50px">410</span><span style="margin-left:auto" class="tag on">200</span></div>
+            <div class="rowln" style="font-size:11px"><span style="width:70px">12:04:02</span><span style="width:130px">/v1/chat/completions</span><span style="width:90px">gpt-4o-mini</span><span style="width:70px">642</span><span style="width:50px">288</span><span style="margin-left:auto" class="tag on">200</span></div>
+            <div class="rowln" style="font-size:11px"><span style="width:70px">12:03:55</span><span style="width:130px">/v1/embeddings</span><span style="width:90px">—</span><span style="width:70px">—</span><span style="width:50px">120</span><span style="margin-left:auto" class="tag">429</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 2b : Access Tokens tab + mint modal ===== -->
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Same page, <b>Access Tokens</b> tab — token list with per-token revoke, and the one-time reveal modal after minting (raw <code>xpxy_live_…</code> shown once + copy-paste curl example).</div>
+      <div class="scr" style="width:940px;position:relative">
+        <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:18px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:4px"><div class="navi" style="padding:6px 12px">Overview</div><div class="navi on" style="padding:6px 12px">APIs</div></div>
+          <div style="margin:0 auto"><div class="pill">◇ Personal ▾</div></div>
+          <div class="navi" style="padding:6px 10px">◔ me@acme.co ▾</div>
+        </div>
+        <div style="padding:14px 20px;border-bottom:1.2px solid rgba(0,0,0,.12);display:flex;align-items:center;gap:12px">
+          <div style="font:700 17px system-ui">OpenAI prod</div><span class="tag">key ••••4f2a</span>
+        </div>
+        <div style="padding:14px 20px 0;display:flex;gap:6px;border-bottom:1.3px solid #2b2b2b">
+          <div class="tab">Usage</div><div class="tab on">Access Tokens</div><div class="tab" style="opacity:.4">Access</div>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 13px system-ui">Proxy tokens</div><div class="btn">+ Create token</div></div>
+          <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+            <div class="rowln" style="border-top:none;font-size:11px;color:#8a8a8a;font-weight:700"><span style="width:150px">label</span><span style="width:170px">token</span><span style="width:110px">created</span><span style="width:100px">last used</span><span style="margin-left:auto">&nbsp;</span></div>
+            <div class="rowln" style="font-size:11.5px"><span style="width:150px">prod-server</span><span style="width:170px;font-family:ui-monospace,monospace">xpxy_live_…a4f2</span><span style="width:110px;color:#8a8a8a">Jun 2</span><span style="width:100px;color:#8a8a8a">2m ago</span><span style="margin-left:auto" class="btn ghost" style="padding:4px 9px">Revoke</span></div>
+            <div class="rowln" style="font-size:11.5px"><span style="width:150px">ci-pipeline</span><span style="width:170px;font-family:ui-monospace,monospace">xpxy_live_…9b1c</span><span style="width:110px;color:#8a8a8a">May 18</span><span style="width:100px;color:#8a8a8a">1d ago</span><span style="margin-left:auto" class="btn ghost" style="padding:4px 9px">Revoke</span></div>
+          </div>
+          <div class="anno">revoke is per-token &amp; immediate — other tokens on this API keep working</div>
+        </div>
+        <!-- modal overlay -->
+        <div style="position:absolute;inset:0;background:rgba(30,28,25,.4);display:flex;align-items:center;justify-content:center">
+          <div class="scr" style="width:520px;border-width:1.8px">
+            <div style="padding:15px 18px;border-bottom:1.3px solid #2b2b2b;display:flex;align-items:center;justify-content:space-between"><div style="font:700 15px system-ui">Token created ✓</div><span style="font:600 14px">✕</span></div>
+            <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+              <div class="box warn" style="border-color:#e0b48a;background:#fbf3ea;color:#a5642a;justify-content:flex-start;font-family:'Caveat',cursive;font-size:16px;padding:8px 11px">⚠ Copy this now — it's shown once and can't be recovered.</div>
+              <div style="border:1.5px solid #2b2b2b;border-radius:8px;padding:11px 12px;display:flex;align-items:center;gap:10px;background:#f7f5f1">
+                <span style="font-family:ui-monospace,monospace;font-size:12.5px;letter-spacing:.02em">xpxy_live_8fK2p…4f2aQ9</span><span class="btn" style="margin-left:auto;padding:5px 11px">⧉ Copy</span>
+              </div>
+              <div style="font:700 11px system-ui;color:#7a7a7a">Example request</div>
+              <div class="box" style="height:auto;justify-content:flex-start;text-align:left;padding:11px;line-height:1.7">curl https://apigate.io/proxy/v1/chat/completions \<br>&nbsp;&nbsp;-H "Authorization: Bearer xpxy_live_…" \<br>&nbsp;&nbsp;-d '{ "model":"gpt-4o", … }'</div>
+              <div class="btn" style="align-self:flex-end">Done</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 2c : single-scroll novel ===== -->
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Novel: no tabs — one scrolling page with a sticky left sub-nav (Config · Tokens · Usage · Access). Everything about an API is visible/scannable at once; jump-links replace tab clicks.</div>
+      <div class="scr" style="width:940px">
+        <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:18px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:4px"><div class="navi" style="padding:6px 12px">Overview</div><div class="navi on" style="padding:6px 12px">APIs</div></div>
+          <div style="margin:0 auto"><div class="pill">◇ Personal ▾</div></div>
+        </div>
+        <div style="display:flex;min-height:480px">
+          <div style="width:170px;border-right:1.4px solid #2b2b2b;padding:16px 14px;display:flex;flex-direction:column;gap:5px">
+            <div style="font:700 14px system-ui;margin-bottom:8px">OpenAI prod</div>
+            <div class="navi on" style="padding:6px 10px;font-size:11.5px">Config</div>
+            <div class="navi" style="padding:6px 10px;font-size:11.5px">Tokens</div>
+            <div class="navi" style="padding:6px 10px;font-size:11.5px">Usage</div>
+            <div class="navi" style="padding:6px 10px;font-size:11.5px;opacity:.4">Access (team)</div>
+            <div class="anno" style="margin-top:8px">sticky — highlights on scroll</div>
+          </div>
+          <div style="flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div style="font:700 13px system-ui;margin-bottom:8px">Config</div>
+              <div style="display:flex;gap:9px;flex-wrap:wrap"><span class="tag">name: OpenAI prod ✎</span><span class="tag">base: api.openai.com</span><span class="tag">key ••••4f2a · Rotate</span><span class="tag on">active ●</span></div>
+            </div>
+            <div class="hr"></div>
+            <div>
+              <div style="display:flex;justify-content:space-between"><div style="font:700 13px system-ui;margin-bottom:8px">Tokens</div><div class="btn" style="padding:4px 10px">+ Create</div></div>
+              <div class="rowln" style="border-top:none;font-size:11.5px"><span style="width:130px">prod-server</span><span style="font-family:ui-monospace,monospace;color:#8a8a8a">xpxy_live_…a4f2</span><span style="margin-left:auto" class="btn ghost" style="padding:3px 8px">Revoke</span></div>
+            </div>
+            <div class="hr"></div>
+            <div>
+              <div style="font:700 13px system-ui;margin-bottom:8px">Usage</div>
+              <div style="display:flex;gap:8px;margin-bottom:10px"><div class="kpi" style="padding:8px 10px"><div class="k">Req</div><div class="v" style="font-size:17px">82k</div></div><div class="kpi" style="padding:8px 10px"><div class="k">Tok</div><div class="v" style="font-size:17px">6.1M</div></div><div class="kpi" style="padding:8px 10px"><div class="k">Cost</div><div class="v" style="font-size:17px">$31</div></div></div>
+              <div class="box" style="height:96px">usage over time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "expand the Access tab / team grants in <a class="dv-oid" href="#2a">2a</a>" · "build the Add-API + attach flow" · "do the Members tab &amp; invite flow" · "I prefer <a class="dv-oid" href="#2c">2c</a>, drop the tabbed version"</p>
+</section>
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">App shell &amp; navigation — three IA approaches, each shown on the Dashboard Overview</span></div>
+  <div class="dv-opts">
+
+    <!-- ============ 1a : LEFT SIDEBAR ============ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Classic left sidebar. Context switcher pinned to the top of the rail — everything below it (nav + all content) is scoped to whatever context is selected. Dense, conventional, low-risk.</div>
+      <div class="scr" style="width:940px">
+        <!-- body split -->
+        <div style="display:flex">
+          <!-- sidebar -->
+          <div style="width:214px;border-right:1.6px solid #2b2b2b;padding:16px 14px;display:flex;flex-direction:column;gap:14px;min-height:560px">
+            <div style="font:800 15px system-ui;letter-spacing:-.01em">◈ apigate</div>
+            <div>
+              <div class="anno" style="margin-bottom:5px">context switcher — top of rail</div>
+              <div class="pill" style="width:100%;justify-content:space-between;box-sizing:border-box">◇ Personal <span style="font-size:9px">▾</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;margin-top:2px">
+              <div class="navi on">▤ Overview</div>
+              <div class="navi">⚿ APIs</div>
+              <div class="navi" style="opacity:.4">☰ Members <span class="anno" style="font-size:12px">(team only)</span></div>
+            </div>
+            <div style="margin-top:auto;border-top:1.2px solid rgba(0,0,0,.12);padding-top:12px">
+              <div class="navi">◔ me@acme.co ▾</div>
+              <div class="anno" style="margin-top:2px">account menu → Team settings, log out</div>
+            </div>
+          </div>
+          <!-- main -->
+          <div style="flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:15px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:700 18px system-ui">Overview</div>
+              <div style="display:flex;gap:9px;align-items:center">
+                <div class="seg"><span class="on">24h</span><span>7d</span><span>30d</span></div>
+                <div class="btn">+ Add API</div>
+              </div>
+            </div>
+            <!-- KPI row -->
+            <div style="display:flex;gap:9px">
+              <div class="kpi"><div class="k">Requests</div><div class="v">128k</div></div>
+              <div class="kpi"><div class="k">Tokens</div><div class="v">9.4M</div></div>
+              <div class="kpi"><div class="k">Est. cost</div><div class="v">$47</div></div>
+              <div class="kpi"><div class="k">Avg latency</div><div class="v">412ms</div></div>
+              <div class="kpi"><div class="k">Error rate</div><div class="v">0.8%</div></div>
+            </div>
+            <div class="anno">token/cost tiles appear only once an API has reported token usage</div>
+            <!-- charts -->
+            <div style="display:flex;gap:12px">
+              <div class="box" style="flex:2;height:158px">usage over time — line/area · hourly&nbsp;buckets</div>
+              <div class="box" style="flex:1;height:158px">requests by API<br>◕ donut</div>
+            </div>
+            <!-- lower: top apis + table -->
+            <div style="display:flex;gap:12px">
+              <div style="flex:1;border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+                <div style="font:700 12px system-ui;margin-bottom:4px">Top APIs</div>
+                <div class="rowln" style="border-top:none"><span class="dot"></span>OpenAI prod <span style="margin-left:auto;color:#8a8a8a">82k</span></div>
+                <div class="rowln"><span class="dot" style="background:#9a9a9a"></span>Anthropic <span style="margin-left:auto;color:#8a8a8a">31k</span></div>
+                <div class="rowln"><span class="dot" style="background:#cfcfcf"></span>Weather API <span style="margin-left:auto;color:#8a8a8a">15k</span></div>
+              </div>
+              <div style="flex:1.4;border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+                <div style="font:700 12px system-ui;margin-bottom:2px">All APIs <span style="font-weight:400;color:#8a8a8a">— rows link to detail →</span></div>
+                <div class="rowln"><span class="tag on" style="font-size:10px">active</span>OpenAI prod<span style="margin-left:auto;color:#8a8a8a">82k · 6.1M tok</span></div>
+                <div class="rowln"><span class="tag on" style="font-size:10px">active</span>Anthropic<span style="margin-left:auto;color:#8a8a8a">31k · 3.3M tok</span></div>
+                <div class="rowln"><span class="tag" style="font-size:10px;opacity:.6">disabled</span>Weather API<span style="margin-left:auto;color:#8a8a8a">15k · —</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1b : TOP NAV ============ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Top nav bar. Context switcher lives dead-center in the header as the anchor of the whole app; nav tabs on the left, account on the right. Content gets full page width — good for wide tables &amp; charts.</div>
+      <div class="scr" style="width:940px">
+        <!-- header -->
+        <div style="border-bottom:1.6px solid #2b2b2b;padding:11px 18px;display:flex;align-items:center;gap:18px">
+          <div style="font:800 15px system-ui">◈ apigate</div>
+          <div style="display:flex;gap:4px">
+            <div class="navi on" style="padding:6px 12px">Overview</div>
+            <div class="navi" style="padding:6px 12px">APIs</div>
+            <div class="navi" style="padding:6px 12px;opacity:.4">Members</div>
+          </div>
+          <div style="margin:0 auto">
+            <div class="pill">◇ Personal <span style="font-size:9px">▾</span></div>
+            <div class="anno" style="text-align:center;margin-top:3px">centered switcher = app anchor</div>
+          </div>
+          <div class="navi" style="padding:6px 10px">◔ me@acme.co ▾</div>
+        </div>
+        <!-- content -->
+        <div style="padding:18px 20px;display:flex;flex-direction:column;gap:15px;min-height:470px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font:700 18px system-ui">Overview</div>
+            <div style="display:flex;gap:9px;align-items:center">
+              <div class="seg"><span class="on">24h</span><span>7d</span><span>30d</span></div>
+              <div class="btn">+ Add API</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <div class="kpi"><div class="k">Requests</div><div class="v">128k</div></div>
+            <div class="kpi"><div class="k">Tokens</div><div class="v">9.4M</div></div>
+            <div class="kpi"><div class="k">Est. cost</div><div class="v">$47</div></div>
+            <div class="kpi"><div class="k">Avg latency</div><div class="v">412ms</div></div>
+            <div class="kpi"><div class="k">Error rate</div><div class="v">0.8%</div></div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div class="box" style="flex:2.4;height:150px">usage over time — full-width chart</div>
+            <div class="box" style="flex:1;height:150px">requests by API<br>◕ donut</div>
+          </div>
+          <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 13px">
+            <div style="font:700 12px system-ui;margin-bottom:2px">All APIs</div>
+            <div class="rowln"><span class="tag on" style="font-size:10px">active</span>OpenAI prod<span style="margin-left:22px;color:#8a8a8a">base: api.openai.com</span><span style="margin-left:auto;color:#8a8a8a">82k req · 6.1M tok · $31 · 380ms</span></div>
+            <div class="rowln"><span class="tag on" style="font-size:10px">active</span>Anthropic<span style="margin-left:22px;color:#8a8a8a">base: api.anthropic.com</span><span style="margin-left:auto;color:#8a8a8a">31k req · 3.3M tok · $16 · 455ms</span></div>
+            <div class="rowln"><span class="tag" style="font-size:10px;opacity:.6">disabled</span>Weather API<span style="margin-left:22px;color:#8a8a8a">base: api.weather.gov</span><span style="margin-left:auto;color:#8a8a8a">15k req · — · — · 120ms</span></div>
+            <div class="anno" style="margin-top:8px">non-LLM API (Weather) → token/cost columns show “—” automatically</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1c : HYBRID / NOVEL ============ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Novel take: thin icon rail + a big <b>context bar</b> that makes Personal/Team a first-class segmented control (not a hidden dropdown), so multi-team users see all their worlds at once. Members/settings surface contextually only when a team is active.</div>
+      <div class="scr" style="width:940px">
+        <div style="display:flex;min-height:560px">
+          <!-- icon rail -->
+          <div style="width:56px;border-right:1.6px solid #2b2b2b;padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:16px">
+            <div style="font:800 16px system-ui">◈</div>
+            <div style="font-size:17px;background:#2b2b2b;color:#fff;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center">▤</div>
+            <div style="font-size:17px;width:34px;height:34px;display:flex;align-items:center;justify-content:center">⚿</div>
+            <div style="margin-top:auto;font-size:17px">◔</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column">
+            <!-- context bar -->
+            <div style="border-bottom:1.6px solid #2b2b2b;padding:12px 18px;display:flex;align-items:center;gap:10px">
+              <span class="anno" style="margin-right:2px">every context, always visible ↓</span>
+              <div class="seg" style="border-radius:999px">
+                <span class="on" style="padding:6px 14px">◇ Personal</span>
+                <span style="padding:6px 14px">◈ Acme Team <span style="font-size:9px;opacity:.6">admin</span></span>
+                <span style="padding:6px 14px">◈ Side Co <span style="font-size:9px;opacity:.6">member</span></span>
+                <span style="padding:6px 12px">+</span>
+              </div>
+            </div>
+            <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font:700 18px system-ui">Overview</div>
+                  <div class="anno" style="color:#7a7a7a">Personal · your APIs only</div>
+                </div>
+                <div style="display:flex;gap:9px;align-items:center">
+                  <div class="seg"><span class="on">24h</span><span>7d</span><span>30d</span></div>
+                  <div class="btn">+ Add API</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:9px">
+                <div class="kpi"><div class="k">Requests</div><div class="v">128k</div></div>
+                <div class="kpi"><div class="k">Tokens</div><div class="v">9.4M</div></div>
+                <div class="kpi"><div class="k">Est. cost</div><div class="v">$47</div></div>
+                <div class="kpi"><div class="k">Avg latency</div><div class="v">412ms</div></div>
+                <div class="kpi"><div class="k">Error rate</div><div class="v">0.8%</div></div>
+              </div>
+              <div style="display:flex;gap:12px">
+                <div class="box" style="flex:2;height:150px">usage over time</div>
+                <div class="box" style="flex:1;height:150px">requests by API ◕</div>
+              </div>
+              <div style="border:1.4px solid #2b2b2b;border-radius:8px;padding:11px 12px">
+                <div style="font:700 12px system-ui;margin-bottom:2px">All APIs</div>
+                <div class="rowln"><span class="tag on" style="font-size:10px">active</span>OpenAI prod<span style="margin-left:auto;color:#8a8a8a">82k · 6.1M tok</span></div>
+                <div class="rowln"><span class="tag on" style="font-size:10px">active</span>Anthropic<span style="margin-left:auto;color:#8a8a8a">31k · 3.3M tok</span></div>
+              </div>
+              <div class="box warn" style="border-color:#e0b48a;background:#fbf3ea;color:#a5642a;height:auto;padding:9px 12px;justify-content:flex-start;font-family:'Caveat',cursive;font-size:15px">when a team is active, a “Members” tab + team-usage view slide into this same area — no separate settings maze</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "build out the API detail screen on top of <a class="dv-oid" href="#1a">1a</a>" · "show <a class="dv-oid" href="#1c">1c</a> in Team mode with the Members tab" · "add mobile versions" · "new shell directions"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

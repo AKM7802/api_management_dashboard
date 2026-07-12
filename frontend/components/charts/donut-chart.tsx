@@ -93,7 +93,7 @@ export function DonutChart({
           ) : null}
         </div>
       </div>
-      <ul className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-40">
+      <ul className="flex w-full min-w-0 flex-col gap-2 sm:flex-1">
         {data.map((d) => {
           const share = total > 0 ? d.value / total : 0;
           return (
@@ -103,7 +103,7 @@ export function DonutChart({
                 className="size-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: d.color }}
               />
-              <span className="truncate text-muted-foreground">{d.label}</span>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">{d.label}</span>
               <span className="ml-auto shrink-0 tabular-nums text-foreground">
                 {(share * 100).toFixed(0)}%
               </span>

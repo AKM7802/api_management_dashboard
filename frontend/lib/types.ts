@@ -9,8 +9,11 @@ export interface User {
 export interface ManagedApi {
   id: string;
   name: string;
-  base_url: string;
-  secret_last4: string;
+  // null when the caller is a granted team member, not an admin/owner — the
+  // upstream address/key are admin-only; a member only ever calls the
+  // gateway's own proxy URL.
+  base_url: string | null;
+  secret_last4: string | null;
   status: "active" | "disabled";
   created_at: string;
   team_id: string | null; // null = personal API
@@ -27,6 +30,11 @@ export interface ProxyToken {
 
 export interface ProxyTokenCreated extends ProxyToken {
   token: string; // shown exactly once
+}
+
+export interface ManagedApiCreated extends ManagedApi {
+  // a token minted for the creator in the same request, shown exactly once
+  token: ProxyTokenCreated;
 }
 
 export interface StatsBucket {
@@ -94,6 +102,7 @@ export interface InvitationCreated extends Invitation {
 }
 
 export interface InvitationPreview {
+  team_id: string;
   team_name: string;
   role: string;
   email: string;
@@ -112,6 +121,17 @@ export interface MemberUsageRow {
   total_tokens: number;
   cost_usd: number;
   errors: number;
+}
+
+export interface MemberStatsBucket {
+  user_id: string;
+  email: string;
+  bucket: string;
+  requests: number;
+  total_tokens: number;
+  avg_latency_ms: number;
+  errors: number;
+  cost_usd: number;
 }
 
 export interface MemberApiAccessRow {

@@ -16,8 +16,10 @@ import type {
   InvitationPreview,
   InviteRole,
   ManagedApi,
+  ManagedApiCreated,
   Member,
   MemberApiAccessRow,
+  MemberStatsBucket,
   MemberUsageRow,
   ProxyToken,
   ProxyTokenCreated,
@@ -227,7 +229,7 @@ export function useCreateApi() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { name: string; base_url: string; secret: string }) =>
-      api<ManagedApi>("/apis", { method: "POST", body: JSON.stringify(body) }),
+      api<ManagedApiCreated>("/apis", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["apis"] }),
   });
 }
@@ -258,7 +260,12 @@ export function useAttachApiToTeam() {
 export function useUpdateApi(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name?: string; status?: string; secret?: string }) =>
+    mutationFn: (body: {
+      name?: string;
+      status?: string;
+      base_url?: string;
+      secret?: string;
+    }) =>
       api<ManagedApi>(`/apis/${id}`, {
         method: "PATCH",
         body: JSON.stringify(body),
@@ -416,6 +423,54 @@ export function useTeamUsageByMember(teamId: string, range: StatsRange) {
       api<MemberUsageRow[]>(`/teams/${teamId}/usage/by-member?range=${range}`),
     enabled: !!teamId,
   });
+}
+
+export function useTeamUsageByMemberSeries(
+  teamId: string,
+  range: StatsRange,
+  interval: StatsInterval,
+) {
+  return useQuery({
+    queryKey: ["teams", teamId, "usage-by-member-series", range, interval],
+    queryFn: () =>
+      api<MemberStatsBucket[]>(
+        `/teams/${teamId}/usage/by-member/series?range=${range}&interval=${interval}`,
+      ),
+    enabled: !!teamId,
+  });
+}
+
+// Reshapes the long-format (one row per member+bucket) response above into
+// the wide format the existing TimeSeriesChart expects (one row per bucket,
+// one numeric field per member, keyed by user_id) — plus the member list
+// needed to build its `series` prop. Buckets a member had zero traffic in
+// are filled with 0 rather than left undefined, so the chart doesn't show
+// gaps.
+export type MemberSeriesRow = { bucket: string } & Record<string, number>;
+
+export function pivotMemberSeries(
+  data: MemberStatsBucket[] | undefined,
+  metric: "requests" | "total_tokens" | "errors" | "cost_usd" = "requests",
+): { rows: MemberSeriesRow[]; members: { user_id: string; email: string }[] } {
+  const buckets = new Map<string, MemberSeriesRow>();
+  const membersMap = new Map<string, string>();
+  for (const row of data ?? []) {
+    membersMap.set(row.user_id, row.email);
+    const bucketRow = buckets.get(row.bucket) ?? ({ bucket: row.bucket } as MemberSeriesRow);
+    bucketRow[row.user_id] = row[metric];
+    buckets.set(row.bucket, bucketRow);
+  }
+  const members = Array.from(membersMap.entries()).map(([user_id, email]) => ({
+    user_id,
+    email,
+  }));
+  const rows = Array.from(buckets.values())
+    .map((row) => {
+      for (const m of members) if (!(m.user_id in row)) row[m.user_id] = 0;
+      return row;
+    })
+    .sort((a, b) => String(a.bucket).localeCompare(String(b.bucket)));
+  return { rows, members };
 }
 
 export function useMemberApiAccess(

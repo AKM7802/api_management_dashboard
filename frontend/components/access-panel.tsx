@@ -85,7 +85,7 @@ export function AccessPanel({ apiId, teamId }: { apiId: string; teamId: string }
                 <TableRow key={m.user_id}>
                   <TableCell>{m.email}</TableCell>
                   <TableCell>
-                    <Badge variant={granted ? "secondary" : "outline"}>
+                    <Badge variant={granted ? "accent" : "outline"}>
                       {granted ? "Granted" : "No access"}
                     </Badge>
                   </TableCell>

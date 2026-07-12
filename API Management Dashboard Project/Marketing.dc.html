@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0}
+  :root{
+    --canvas:#f5f2eb;--panel:#ffffff;--panel-2:#faf8f3;--border:#ece7de;--border-2:#f3efe8;
+    --ink:#211f1b;--muted:#8a8378;--faint:#b5afa3;
+    --accent:#d9662e;--accent-soft:#fbeee4;--accent-ink:#b8501c;
+    --pos:#2e9e63;--pos-soft:#e9f4ee;
+    --num:'JetBrains Mono',ui-monospace,monospace;
+  }
+  [data-theme="dark"]{
+    --canvas:#0e1013;--panel:#16191e;--panel-2:#12151a;--border:#262b31;--border-2:#1c2127;
+    --ink:#e8ebef;--muted:#7d868f;--faint:#4b535b;
+    --accent:#ef7a3e;--accent-soft:#2a1a10;--accent-ink:#ef7a3e;
+    --pos:#43c07a;--pos-soft:#152418;
+  }
+  a{color:var(--accent)}
+</style>
+</helmet>
+
+<div data-screen-label="Marketing" data-theme="{{ theme }}" style="background:var(--canvas);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;transition:background .3s,color .3s">
+
+  <!-- nav -->
+  <div style="display:flex;align-items:center;gap:20px;padding:16px 32px;border-bottom:1px solid var(--border);position:sticky;top:0;background:color-mix(in oklab,var(--canvas) 88%,transparent);backdrop-filter:blur(10px);z-index:10">
+    <div style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em"><span style="width:20px;height:20px;background:var(--accent);border-radius:6px;display:inline-block"></span>apigate</div>
+    <div style="display:flex;gap:22px;font-size:13.5px;font-weight:500;color:var(--muted);margin-left:14px">
+      <span>Features</span><span>How it works</span><span>Security</span><span>FAQ</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;background:var(--panel-2)">{{ themeIcon }}</div>
+      <span onClick="{{ goAuth }}" style="font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer">Log in</span>
+      <div onClick="{{ goAuth }}" style="background:var(--ink);color:var(--canvas);padding:9px 17px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer">Sign up</div>
+    </div>
+  </div>
+
+  <!-- hero -->
+  <div style="max-width:1000px;margin:0 auto;padding:74px 32px 60px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:22px">
+    <div style="font-size:12px;font-weight:600;font-family:var(--num);color:var(--accent-ink);background:var(--accent-soft);padding:6px 14px;border-radius:999px">SELF-HOSTED API GATEWAY</div>
+    <div style="font-size:52px;line-height:1.05;font-weight:700;letter-spacing:-.03em;max-width:720px;text-wrap:balance">Hand out proxy tokens,<br>never your real API keys.</div>
+    <div style="font-size:17px;line-height:1.55;color:var(--muted);max-width:540px">Register any HTTP API once. Share a safe token instead of the secret. Watch every call — requests, tokens, cost, latency, errors — in one dashboard.</div>
+    <div style="display:flex;gap:12px;margin-top:4px">
+      <div onClick="{{ goAuth }}" style="background:var(--accent);color:#fff;padding:12px 24px;border-radius:10px;font-size:14.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 10px rgba(217,102,46,.25)">Start free</div>
+      <div style="border:1px solid var(--border);background:var(--panel);padding:12px 24px;border-radius:10px;font-size:14.5px;font-weight:600;cursor:pointer">See how it works</div>
+    </div>
+
+    <!-- hero visual: mini dashboard mock -->
+    <div style="width:100%;max-width:820px;margin-top:30px;border:1px solid var(--border);border-radius:16px;background:var(--panel);box-shadow:0 24px 60px rgba(40,30,20,.14);overflow:hidden;text-align:left">
+      <div style="display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border-2)"><span style="width:11px;height:11px;border-radius:999px;background:var(--border);display:inline-block"></span><span style="width:11px;height:11px;border-radius:999px;background:var(--border);display:inline-block"></span><span style="width:11px;height:11px;border-radius:999px;background:var(--border);display:inline-block"></span><span style="margin-left:10px;font-size:11px;font-family:var(--num);color:var(--muted)">apigate.io/dashboard</span></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:11px">
+          <div style="flex:1;border:1px solid var(--border);border-radius:11px;padding:12px 14px"><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Requests</div><div style="font-family:var(--num);font-size:21px;font-weight:600;margin-top:4px">128k</div></div>
+          <div style="flex:1;border:1px solid var(--border);border-radius:11px;padding:12px 14px"><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Tokens</div><div style="font-family:var(--num);font-size:21px;font-weight:600;margin-top:4px">9.4M</div></div>
+          <div style="flex:1;border:1px solid var(--border);border-radius:11px;padding:12px 14px"><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Est. cost</div><div style="font-family:var(--num);font-size:21px;font-weight:600;margin-top:4px">$47</div></div>
+          <div style="flex:1;border:1px solid var(--border);border-radius:11px;padding:12px 14px"><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Errors</div><div style="font-family:var(--num);font-size:21px;font-weight:600;margin-top:4px">0.8%</div></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:11px;padding:14px 15px">
+          <svg viewBox="0 0 760 90" style="width:100%;height:84px;display:block" preserveAspectRatio="none"><defs><linearGradient id="h" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.22"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs><path d="M0,66 L95,58 L190,62 L285,42 L380,48 L475,30 L570,38 L665,18 L760,24 L760,90 L0,90 Z" fill="url(#h)"/><path d="M0,66 L95,58 L190,62 L285,42 L380,48 L475,30 L570,38 L665,18 L760,24" fill="none" style="stroke:var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- capability strip -->
+  <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--panel)">
+    <div style="max-width:1000px;margin:0 auto;padding:36px 32px;display:flex;gap:20px;flex-wrap:wrap">
+      <div style="flex:1;min-width:230px"><div style="font-size:15px;font-weight:700;margin-bottom:5px">🔐 Credential custody</div><div style="font-size:13.5px;line-height:1.5;color:var(--muted)">Upload a key once. It's encrypted at rest and never shown again — only the last four characters.</div></div>
+      <div style="flex:1;min-width:230px"><div style="font-size:15px;font-weight:700;margin-bottom:5px">↔ Reverse proxy</div><div style="font-size:13.5px;line-height:1.5;color:var(--muted)">One gateway stands in for any HTTP API. Callers use a token; we swap in the real key in memory.</div></div>
+      <div style="flex:1;min-width:230px"><div style="font-size:15px;font-weight:700;margin-bottom:5px">📊 Usage analytics</div><div style="font-size:13.5px;line-height:1.5;color:var(--muted)">Every call logged and rolled up — per API, per token, per team member.</div></div>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <div style="max-width:1000px;margin:0 auto;padding:64px 32px">
+    <div style="text-align:center;font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px">How it works</div>
+    <div style="text-align:center;font-size:15px;color:var(--muted);margin-bottom:40px">From a raw key to live insight in four steps.</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:20px"><div style="font-family:var(--num);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px">01</div><div style="font-size:15px;font-weight:700;margin-bottom:5px">Register an API</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Name, base URL, and the real secret. Encrypted instantly.</div></div>
+      <div style="flex:1;min-width:200px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:20px"><div style="font-family:var(--num);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px">02</div><div style="font-size:15px;font-weight:700;margin-bottom:5px">Mint a proxy token</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Get an <span style="font-family:var(--num)">xpxy_live_…</span> token, shown once.</div></div>
+      <div style="flex:1;min-width:200px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:20px"><div style="font-family:var(--num);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px">03</div><div style="font-size:15px;font-weight:700;margin-bottom:5px">Call the proxy</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Point your app at the gateway. Streaming works untouched.</div></div>
+      <div style="flex:1;min-width:200px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:20px"><div style="font-family:var(--num);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px">04</div><div style="font-size:15px;font-weight:700;margin-bottom:5px">Watch usage</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Requests, tokens, cost and errors roll in live.</div></div>
+    </div>
+  </div>
+
+  <!-- features grid -->
+  <div style="border-top:1px solid var(--border);background:var(--panel)">
+    <div style="max-width:1000px;margin:0 auto;padding:64px 32px">
+      <div style="text-align:center;font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:40px">Everything included</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+        <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--canvas)"><div style="font-size:15px;font-weight:700;margin-bottom:5px">SSE streaming, untouched</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Chat-completion typing responses stream through byte-for-byte.</div></div>
+        <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--canvas)"><div style="font-size:15px;font-weight:700;margin-bottom:5px">Instant revoke</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Disable a key or token and it's rejected on the very next call.</div></div>
+        <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--canvas)"><div style="font-size:15px;font-weight:700;margin-bottom:5px">Any HTTP API</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">No provider setup — bearer or x-api-key, we inject both.</div></div>
+        <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--canvas)"><div style="font-size:15px;font-weight:700;margin-bottom:5px">Teams &amp; roles</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Owner / admin / member with per-API access grants. Opt-in.</div></div>
+        <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--canvas)"><div style="font-size:15px;font-weight:700;margin-bottom:5px">Auto-detected LLMs</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">Token &amp; cost charts appear only once a response reports usage.</div></div>
+        <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--canvas)"><div style="font-size:15px;font-weight:700;margin-bottom:5px">Cost estimates</div><div style="font-size:13px;line-height:1.5;color:var(--muted)">A built-in price table turns tokens into dollars, no billing setup.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- architecture -->
+  <div style="max-width:1000px;margin:0 auto;padding:64px 32px">
+    <div style="text-align:center;font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:40px">The path of a request</div>
+    <div style="display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;justify-content:center">
+      <div style="flex:1;min-width:150px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:20px 18px;text-align:center"><div style="font-size:13.5px;font-weight:700;margin-bottom:4px">Your app</div><div style="font-size:11.5px;color:var(--muted);font-family:var(--num)">Bearer xpxy_live_…</div></div>
+      <div style="display:flex;align-items:center;color:var(--accent);font-size:20px">→</div>
+      <div style="flex:1.3;min-width:180px;border:1.5px solid var(--accent);background:var(--accent-soft);border-radius:14px;padding:20px 18px;text-align:center"><div style="font-size:13.5px;font-weight:700;margin-bottom:4px;color:var(--accent-ink)">apigate gateway</div><div style="font-size:11.5px;color:var(--accent-ink);opacity:.85">auth → decrypt in memory → inject real key</div></div>
+      <div style="display:flex;align-items:center;color:var(--accent);font-size:20px">→</div>
+      <div style="flex:1;min-width:150px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:20px 18px;text-align:center"><div style="font-size:13.5px;font-weight:700;margin-bottom:4px">Upstream API</div><div style="font-size:11.5px;color:var(--muted);font-family:var(--num)">real key, never exposed</div></div>
+    </div>
+    <div style="text-align:center;font-size:12.5px;color:var(--muted);margin-top:16px;font-family:var(--num)">response streamed back untouched · usage logged after the last byte</div>
+  </div>
+
+  <!-- security -->
+  <div style="border-top:1px solid var(--border);background:var(--panel)">
+    <div style="max-width:1000px;margin:0 auto;padding:64px 32px;display:flex;gap:40px;flex-wrap:wrap;align-items:center">
+      <div style="flex:1;min-width:280px">
+        <div style="font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:14px">Secrets stay secret</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:11px"><span style="color:var(--accent);font-size:16px">◆</span><div><div style="font-size:14px;font-weight:600">Encrypted at rest</div><div style="font-size:13px;color:var(--muted);line-height:1.5">AES via Fernet with an operator-controlled key.</div></div></div>
+          <div style="display:flex;gap:11px"><span style="color:var(--accent);font-size:16px">◆</span><div><div style="font-size:14px;font-weight:600">Decrypted only in memory</div><div style="font-size:13px;color:var(--muted);line-height:1.5">The real key touches the wire only on the way upstream.</div></div></div>
+          <div style="display:flex;gap:11px"><span style="color:var(--accent);font-size:16px">◆</span><div><div style="font-size:14px;font-weight:600">One-way by design</div><div style="font-size:13px;color:var(--muted);line-height:1.5">Keys and tokens are shown once; lost means reissue, not lookup.</div></div></div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:260px;border:1px solid var(--border);border-radius:16px;background:var(--canvas);padding:26px;display:flex;align-items:center;justify-content:center;font-size:56px">🔒</div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div style="max-width:760px;margin:0 auto;padding:64px 32px">
+    <div style="text-align:center;font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:36px">Questions</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ faq0 }}" style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:16px 18px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:600">Does it work with non-LLM APIs? <span style="color:var(--accent);font-size:18px">{{ i0 }}</span></div>
+        <sc-if value="{{ o0 }}" hint-placeholder-val="{{ false }}"><div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:10px">Yes — any HTTP API that authenticates via bearer or api-key header. Token &amp; cost charts simply stay hidden until a response reports token usage.</div></sc-if>
+      </div>
+      <div onClick="{{ faq1 }}" style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:16px 18px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:600">Is there billing or quotas? <span style="color:var(--accent);font-size:18px">{{ i1 }}</span></div>
+        <sc-if value="{{ o1 }}" hint-placeholder-val="{{ false }}"><div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:10px">No. Cost is a convenience estimate from a built-in price table — there's no invoicing, payment, or plan system.</div></sc-if>
+      </div>
+      <div onClick="{{ faq2 }}" style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:16px 18px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:600">How are keys stored? <span style="color:var(--accent);font-size:18px">{{ i2 }}</span></div>
+        <sc-if value="{{ o2 }}" hint-placeholder-val="{{ false }}"><div style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:10px">Encrypted at rest with AES (Fernet) under an operator-controlled key. Only the last four characters are ever displayed again.</div></sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="max-width:1000px;margin:0 auto;padding:20px 32px 80px">
+    <div style="border-radius:20px;background:var(--ink);color:var(--canvas);padding:56px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px">
+      <div style="font-size:34px;font-weight:700;letter-spacing:-.02em">Stop pasting real keys everywhere.</div>
+      <div style="font-size:15px;opacity:.7;max-width:460px;line-height:1.5">Register your first API and mint a safe token in under a minute.</div>
+      <div onClick="{{ goAuth }}" style="background:var(--accent);color:#fff;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px">Start free</div>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <div style="border-top:1px solid var(--border);background:var(--panel)">
+    <div style="max-width:1000px;margin:0 auto;padding:28px 32px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px"><span style="width:16px;height:16px;background:var(--accent);border-radius:5px;display:inline-block"></span>apigate</div>
+      <div style="font-size:12.5px;color:var(--muted)">Self-hosted API gateway &amp; analytics</div>
+      <div style="margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;gap:18px"><span>Docs</span><span>GitHub</span><span>Privacy</span></div>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:900},&quot;defaultDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  state = { dark: null, faq: -1 };
+  get isDark() { return this.state.dark == null ? (this.props.defaultDark ?? false) : this.state.dark; }
+  componentDidMount() { try { const v = localStorage.getItem('apigate-theme'); if (v != null && this.state.dark == null) this.setState({ dark: v === 'dark' }); } catch (e) {} }
+  setTheme(nd) { try { localStorage.setItem('apigate-theme', nd ? 'dark' : 'light'); } catch (e) {} this.setState({ dark: nd }); }
+  toggleFaq(i) { this.setState(s => ({ faq: s.faq === i ? -1 : i })); }
+  renderVals() {
+    const dark = this.isDark, f = this.state.faq;
+    return {
+      theme: dark ? 'dark' : 'light', themeIcon: dark ? '☀' : '☾',
+      toggleTheme: () => this.setTheme(!dark),
+      goAuth: () => { window.location.href = 'Auth.dc.html'; },
+      faq0: () => this.toggleFaq(0), faq1: () => this.toggleFaq(1), faq2: () => this.toggleFaq(2),
+      o0: f === 0, o1: f === 1, o2: f === 2,
+      i0: f === 0 ? '−' : '+', i1: f === 1 ? '−' : '+', i2: f === 2 ? '−' : '+',
+    };
+  }
+}
+</script>
+</body>
+</html>

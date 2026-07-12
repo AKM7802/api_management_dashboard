@@ -152,7 +152,9 @@ def test_member_token_list_excludes_admin_tokens(client):
     assert [t["name"] for t in member_tokens] == ["member token"]
 
     admin_tokens = client.get(f"/apis/{api['id']}/tokens", headers=admin_ctx).json()
-    assert {t["name"] for t in admin_tokens} == {"admin token", "member token"}
+    # "default" is the token auto-minted for the creator when the API itself
+    # was created, on top of the two created explicitly in this test
+    assert {t["name"] for t in admin_tokens} == {"default", "admin token", "member token"}
 
 
 def test_revoking_grant_removes_api_from_members_list(client):

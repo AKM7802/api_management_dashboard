@@ -132,6 +132,54 @@ def test_by_member_rejected_for_personal_api(client):
     assert r.status_code == 400
 
 
+def test_by_member_series_has_correct_buckets_and_emails(proxied):
+    owner_headers, team, api, member_headers, member_id = _team_two_members_one_api(
+        proxied
+    )
+    admin_ctx = team_headers(owner_headers, team["id"])
+    member_ctx = team_headers(member_headers, team["id"])
+
+    admin_token = create_token(proxied, admin_ctx, api["id"])
+    proxied.post(
+        "/proxy/v1/chat/completions",
+        json={"model": "gpt-4o", "messages": []},
+        headers={"Authorization": f"Bearer {admin_token['token']}"},
+    )
+    member_token = create_token(proxied, member_ctx, api["id"])
+    for _ in range(2):
+        proxied.post(
+            "/proxy/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": []},
+            headers={"Authorization": f"Bearer {member_token['token']}"},
+        )
+    wait_for_logs(proxied, admin_ctx, api["id"], n=3)
+
+    rows = proxied.get(
+        f"/teams/{team['id']}/usage/by-member/series?range=7d&interval=day",
+        headers=admin_ctx,
+    ).json()
+    owner_id = whoami(proxied, owner_headers)["id"]
+    by_user = {r["user_id"]: r for r in rows}
+
+    # every row here is today's single bucket -- one row per member, not per
+    # request, since stats_by_member groups by (user_id, bucket)
+    assert by_user[owner_id]["requests"] == 1
+    assert by_user[owner_id]["email"] == "owner@x.com"
+    assert by_user[member_id]["requests"] == 2
+    assert by_user[member_id]["email"] == "member@x.com"
+    assert all("bucket" in r for r in rows)
+
+
+def test_by_member_series_rejected_for_member(client):
+    owner_headers, team, api, member_headers, member_id = _team_two_members_one_api(
+        client
+    )
+    r = client.get(
+        f"/teams/{team['id']}/usage/by-member/series", headers=member_headers
+    )
+    assert r.status_code == 403
+
+
 def test_team_wide_summary_aggregates_across_apis(proxied):
     owner_headers, team, api, member_headers, member_id = _team_two_members_one_api(
         proxied

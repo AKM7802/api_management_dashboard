@@ -1,0 +1,9 @@
+[project]
+name = "test-apis"
+version = "0.1.0"
+description = "Plain API-key-protected FastAPI service for testing the dashboard's proxy against a real upstream"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]

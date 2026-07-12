@@ -66,3 +66,18 @@ def test_rotated_secret_used_immediately(proxied):  # noqa: F811
     assert r.status_code == 200
     # the upstream must see the NEW key, not the cached old one
     assert r.headers["x-echo-authorization"] == "Bearer sk-rotated-secret-xyz1"
+
+
+def test_changed_base_url_used_immediately(proxied):  # noqa: F811
+    headers, api, token = _setup(proxied)
+    assert _proxy_get(proxied, token["token"]).status_code == 200  # now cached
+
+    # the mock upstream only serves /v1/models — a base_url edit that adds a
+    # path segment means the forwarded request lands somewhere that 404s,
+    # proving the *new* base_url was used, not the cached old one
+    proxied.patch(
+        f"/apis/{api['id']}",
+        json={"base_url": "http://upstream/changed"},
+        headers=headers,
+    )
+    assert _proxy_get(proxied, token["token"]).status_code == 404

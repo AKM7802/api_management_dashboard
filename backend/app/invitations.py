@@ -47,7 +47,7 @@ def preview_invitation(token: str, db: Session = Depends(get_db)):
     invite = _load_pending_invite(db, token)
     team = db.get(models.Team, invite.team_id)
     return schemas.InvitationPreview(
-        team_name=team.name, role=invite.role, email=invite.email
+        team_id=team.id, team_name=team.name, role=invite.role, email=invite.email
     )
 
 
@@ -58,6 +58,14 @@ def accept_invitation(
     db: Session = Depends(get_db),
 ):
     invite = _load_pending_invite(db, body.token)
+    if user.email != invite.email:
+        # the invite link works for anyone who holds it, but only the
+        # intended recipient's account may actually claim it -- otherwise
+        # a forwarded/leaked link lets an uninvited account join the team
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "This invitation was sent to a different email address",
+        )
 
     existing = db.scalar(
         select(models.TeamMembership).where(

@@ -1,39 +1,130 @@
 "use client";
 
-import { AlertTriangle, Binary, DollarSign, KeyRound, Shield, Zap } from "lucide-react";
+import { Check, Copy, KeyRound, MoreHorizontal, Pencil, Shield } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AccessPanel } from "@/components/access-panel";
-import { BackLink } from "@/components/back-link";
-import { KpiCard } from "@/components/kpi-card";
 import { TokensPanel } from "@/components/tokens-panel";
 import { UsagePanel } from "@/components/usage-panel";
-import { Badge } from "@/components/ui/badge";
+import { API_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { compactNumber, currency, percent } from "@/lib/format";
 import {
   useActiveMembership,
   useApi,
   useDeleteApi,
-  useStats,
-  useStatsSummary,
   useUpdateApi,
 } from "@/lib/queries";
+
+function EditConnectionDialog({
+  apiId,
+  baseUrl,
+  open,
+  onOpenChange,
+}: {
+  apiId: string;
+  baseUrl: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const update = useUpdateApi(apiId);
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const base_url = form.get("base_url") as string;
+    const secret = form.get("secret") as string;
+    update.mutate(
+      { base_url, secret: secret.trim() ? secret : undefined },
+      {
+        onSuccess: () => {
+          toast.success("Connection updated");
+          onOpenChange(false);
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit connection</DialogTitle>
+          <DialogDescription>
+            Update where requests are forwarded and/or replace the upstream
+            secret. Existing proxy tokens keep working — nothing else changes.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onSubmit}>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="edit-base-url">Base URL</FieldLabel>
+              <Input
+                id="edit-base-url"
+                name="base_url"
+                type="url"
+                required
+                defaultValue={baseUrl ?? ""}
+                placeholder="https://api.example.com"
+              />
+              <FieldDescription>
+                The upstream API&apos;s root URL. Requests to your proxy token
+                are forwarded here.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="edit-secret">New API key</FieldLabel>
+              <Input
+                id="edit-secret"
+                name="secret"
+                type="password"
+                autoComplete="off"
+                placeholder="Leave blank to keep the current key"
+              />
+              <FieldDescription>
+                Sent over TLS, stored encrypted. Only the last 4 characters
+                stay visible.
+              </FieldDescription>
+            </Field>
+            <DialogFooter>
+              <Button type="submit" disabled={update.isPending}>
+                {update.isPending ? <Spinner data-icon="inline-start" /> : null}
+                Save changes
+              </Button>
+            </DialogFooter>
+          </FieldGroup>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function ApiDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,14 +132,22 @@ export default function ApiDetailPage() {
   const api = useApi(id);
   const update = useUpdateApi(id);
   const del = useDeleteApi();
-  const summary = useStatsSummary(id, "30d");
-  const series = useStats(id, "30d", "day");
   const { role } = useActiveMembership();
+  const [editOpen, setEditOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const proxyUrl = `${API_URL}/proxy`;
+
+  async function copyProxyUrl() {
+    await navigator.clipboard.writeText(proxyUrl);
+    setCopied(true);
+    toast.success("Proxy URL copied");
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   if (api.isPending) {
     return (
       <div className="flex flex-col gap-4">
-        <BackLink href="/dashboard" label="Back to dashboard" />
+        <Skeleton className="h-5 w-56" />
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-48 w-full" />
       </div>
@@ -61,13 +160,24 @@ export default function ApiDetailPage() {
   // control, as today. Team API → only owner/admin can configure or grant.
   const isTeamApi = a.team_id !== null;
   const isAdmin = !isTeamApi || role === "owner" || role === "admin";
+  const isActive = a.status === "active";
 
   function toggleStatus() {
-    const next = a.status === "active" ? "disabled" : "active";
+    const next = isActive ? "disabled" : "active";
     update.mutate(
       { status: next },
       { onSuccess: () => toast.success(`API ${next}`) },
     );
+  }
+
+  function onRename() {
+    const name = prompt("Rename API", a.name);
+    if (name && name.trim()) {
+      update.mutate(
+        { name: name.trim() },
+        { onError: (err) => toast.error(err.message) },
+      );
+    }
   }
 
   function onDelete() {
@@ -81,121 +191,124 @@ export default function ApiDetailPage() {
     });
   }
 
-  const trend = (key: "requests" | "total_tokens" | "cost_usd") =>
-    series.data?.map((b) => b[key]) ?? [];
-
-  // registering an API never declares whether it's an LLM — so this is
-  // purely observed: once a response has reported token usage, show the
-  // token/cost metrics; otherwise stay generic (requests/errors only).
-  const isLikelyLlm = (summary.data?.total_tokens ?? 0) > 0;
-
   return (
     <div className="flex flex-col gap-6">
-      <BackLink href="/dashboard" label="Back to dashboard" />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            {a.name}
-          </h1>
-          <Badge variant={a.status === "active" ? "secondary" : "outline"}>
-            {a.status}
-          </Badge>
-        </div>
+      <div className="text-sm text-muted-foreground">
+        <Link href="/dashboard" className="text-primary hover:underline">
+          Overview
+        </Link>{" "}
+        / APIs / <span className="font-semibold text-foreground">{a.name}</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">
+          {a.name}
+        </h1>
         {isAdmin ? (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={toggleStatus}>
-              {a.status === "active" ? "Disable" : "Enable"}
+          <button
+            type="button"
+            onClick={onRename}
+            aria-label="Rename API"
+            title="Rename API"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="size-4" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={copyProxyUrl}
+          title="This is the URL your tokens call — copy it into your client"
+          className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1 font-mono text-xs text-primary hover:bg-primary/10"
+        >
+          {proxyUrl}
+          {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+        </button>
+        {isAdmin ? (
+          <>
+            <span className="rounded-lg border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground">
+              {a.base_url}
+            </span>
+            <span className="rounded-lg border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground">
+              key ••••{a.secret_last4}
+            </span>
+          </>
+        ) : null}
+
+        {isAdmin ? (
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {a.status}
+            </span>
+            <Switch
+              checked={isActive}
+              onCheckedChange={toggleStatus}
+              title={isActive ? "Disable this API" : "Enable this API"}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditOpen(true)}
+              title="Edit the upstream base URL or API key"
+            >
+              Edit connection
             </Button>
-            <Button variant="destructive" size="sm" onClick={onDelete}>
-              Delete
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="More actions"
+                    title="More actions"
+                  />
+                }
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+      <EditConnectionDialog
+        apiId={a.id}
+        baseUrl={a.base_url}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+
+      <Tabs defaultValue="usage">
+        <TabsList variant="line">
+          <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="tokens">
             <KeyRound data-icon="inline-start" />
             Access Tokens
           </TabsTrigger>
-          <TabsTrigger value="usage">Usage</TabsTrigger>
           {isTeamApi && isAdmin ? (
             <TabsTrigger value="access">
               <Shield data-icon="inline-start" />
               Access
             </TabsTrigger>
-          ) : null}
+          ) : (
+            <TabsTrigger value="access" disabled>
+              <Shield data-icon="inline-start" />
+              Access <span className="text-muted-foreground/70">· team only</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
-        <TabsContent value="overview" className="flex flex-col gap-4 pt-4">
-          {summary.data ? (
-            <div
-              className={`grid grid-cols-2 gap-3 ${isLikelyLlm ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
-            >
-              <KpiCard
-                label="Requests (30d)"
-                value={summary.data.requests.toLocaleString()}
-                icon={Zap}
-                trend={trend("requests")}
-              />
-              {isLikelyLlm ? (
-                <>
-                  <KpiCard
-                    label="LLM Tokens (30d)"
-                    value={compactNumber(summary.data.total_tokens)}
-                    icon={Binary}
-                    tone="good"
-                    trend={trend("total_tokens")}
-                  />
-                  <KpiCard
-                    label="Est. cost"
-                    value={currency(summary.data.cost_usd)}
-                    icon={DollarSign}
-                    tone="warning"
-                    trend={trend("cost_usd")}
-                  />
-                </>
-              ) : null}
-              <KpiCard
-                label="Error rate"
-                value={percent(summary.data.error_rate)}
-                icon={AlertTriangle}
-                tone={summary.data.error_rate > 0.05 ? "critical" : "default"}
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full" />
-              ))}
-            </div>
-          )}
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-heading">Details</CardTitle>
-              <CardDescription>Upstream configuration</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-                <dt className="text-muted-foreground">Base URL</dt>
-                <dd className="font-mono">{a.base_url}</dd>
-                <dt className="text-muted-foreground">Key</dt>
-                <dd className="font-mono">••••{a.secret_last4}</dd>
-                <dt className="text-muted-foreground">Created</dt>
-                <dd>{new Date(a.created_at).toLocaleDateString()}</dd>
-              </dl>
-            </CardContent>
-          </Card>
+        <TabsContent value="usage" className="pt-4">
+          <UsagePanel apiId={a.id} teamId={a.team_id} isAdmin={isAdmin} />
         </TabsContent>
 
         <TabsContent value="tokens" className="pt-4">
           <TokensPanel apiId={a.id} />
-        </TabsContent>
-
-        <TabsContent value="usage" className="pt-4">
-          <UsagePanel apiId={a.id} teamId={a.team_id} isAdmin={isAdmin} />
         </TabsContent>
 
         {isTeamApi && isAdmin ? (

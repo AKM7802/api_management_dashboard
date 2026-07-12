@@ -1,12 +1,21 @@
 "use client";
 
-import { Plus, Settings2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Binary,
+  DollarSign,
+  Plus,
+  Settings2,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { BarList } from "@/components/charts/bar-list";
+import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { CodeBlock } from "@/components/code-block";
+import { KpiCard } from "@/components/kpi-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,8 +59,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compactNumber, currency, percent } from "@/lib/format";
 import {
+  pivotMemberSeries,
   useCreateInvitation,
   useInvitations,
   useMe,
@@ -59,10 +70,19 @@ import {
   useRevokeInvitation,
   useTeamMembers,
   useTeamUsageByMember,
+  useTeamUsageByMemberSeries,
   useTeamUsageSummary,
   useUpdateMemberRole,
 } from "@/lib/queries";
-import type { InviteRole, Role } from "@/lib/types";
+import type { InviteRole, Role, StatsInterval, StatsRange } from "@/lib/types";
+
+const MEMBER_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 function InviteDialog({ teamId }: { teamId: string }) {
   const createInvite = useCreateInvitation(teamId);
@@ -169,17 +189,31 @@ export function TeamMembersPanel({
   isAdmin: boolean;
   isOwner: boolean;
 }) {
+  const [range, setRange] = useState<StatsRange>("7d");
+  const interval: StatsInterval = range === "24h" ? "hour" : "day";
   const me = useMe();
   const members = useTeamMembers(teamId);
   const invitations = useInvitations(teamId);
   const updateRole = useUpdateMemberRole(teamId);
   const removeMember = useRemoveMember(teamId);
   const revokeInvite = useRevokeInvitation(teamId);
-  const usageSummary = useTeamUsageSummary(teamId, "30d");
-  const usageByMember = useTeamUsageByMember(teamId, "30d");
+  const usageSummary = useTeamUsageSummary(teamId, range);
+  const usageByMember = useTeamUsageByMember(teamId, range);
+  const usageByMemberSeries = useTeamUsageByMemberSeries(teamId, range, interval);
   // no API declares whether it's an LLM at registration — only show
   // token/cost columns once the team has actually reported some usage
   const hasTokenData = (usageSummary.data?.total_tokens ?? 0) > 0;
+  const memberSeriesMetric = hasTokenData ? "total_tokens" : "requests";
+  const { rows: memberSeriesRows, members: seriesMembers } = pivotMemberSeries(
+    usageByMemberSeries.data,
+    memberSeriesMetric,
+  );
+  const memberChartSeries = seriesMembers.map((m, i) => ({
+    key: m.user_id,
+    label: m.email,
+    color: MEMBER_COLORS[i % MEMBER_COLORS.length],
+    format: hasTokenData ? compactNumber : (n: number) => n.toLocaleString(),
+  }));
 
   function onRoleChange(userId: string, role: Role) {
     updateRole.mutate(
@@ -201,6 +235,63 @@ export function TeamMembersPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {isAdmin ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">Team-wide usage</p>
+          <Tabs value={range} onValueChange={(v) => setRange(v as StatsRange)}>
+            <TabsList>
+              <TabsTrigger value="24h">24h</TabsTrigger>
+              <TabsTrigger value="7d">7d</TabsTrigger>
+              <TabsTrigger value="30d">30d</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      ) : null}
+
+      {isAdmin ? (
+        usageSummary.data ? (
+          <div
+            className={`grid grid-cols-2 gap-3 ${hasTokenData ? "sm:grid-cols-4" : "sm:grid-cols-2"}`}
+          >
+            <KpiCard
+              label="Team requests"
+              value={usageSummary.data.requests.toLocaleString()}
+              icon={Zap}
+            />
+            {hasTokenData ? (
+              <>
+                <KpiCard
+                  label="Tokens"
+                  value={compactNumber(usageSummary.data.total_tokens)}
+                  icon={Binary}
+                  tone="good"
+                />
+                <KpiCard
+                  label="Est. cost"
+                  value={currency(usageSummary.data.cost_usd)}
+                  icon={DollarSign}
+                  tone="warning"
+                />
+              </>
+            ) : null}
+            <KpiCard
+              label="Error rate"
+              value={percent(usageSummary.data.error_rate)}
+              icon={AlertTriangle}
+              tone={usageSummary.data.error_rate > 0.05 ? "critical" : "default"}
+            />
+          </div>
+        ) : (
+          <div
+            className={`grid grid-cols-2 gap-3 ${hasTokenData ? "sm:grid-cols-4" : "sm:grid-cols-2"}`}
+          >
+            {[...Array(hasTokenData ? 4 : 2)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
+        )
+      ) : null}
+
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="font-heading">Members</CardTitle>
@@ -251,7 +342,9 @@ export function TeamMembersPanel({
                             </SelectContent>
                           </Select>
                         ) : (
-                          <Badge variant="secondary">{m.role}</Badge>
+                          <Badge variant={m.role === "owner" ? "accent" : "outline"}>
+                            {m.role}
+                          </Badge>
                         )}
                       </TableCell>
                       {isAdmin ? (
@@ -310,7 +403,7 @@ export function TeamMembersPanel({
                     <TableRow key={inv.id}>
                       <TableCell>{inv.email}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{inv.role}</Badge>
+                        <Badge variant="warning">{inv.role} · pending</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(inv.expires_at).toLocaleDateString()}
@@ -344,50 +437,29 @@ export function TeamMembersPanel({
 
       {isAdmin ? (
         <>
-          {usageSummary.data ? (
-            <div
-              className={`grid grid-cols-2 gap-3 ${hasTokenData ? "sm:grid-cols-4" : "sm:grid-cols-2"}`}
-            >
-              <Card className="gap-2 py-4">
-                <CardContent className="px-4">
-                  <p className="text-sm text-muted-foreground">Requests</p>
-                  <p className="text-2xl font-semibold tabular-nums">
-                    {usageSummary.data.requests.toLocaleString()}
-                  </p>
-                </CardContent>
-              </Card>
-              {hasTokenData ? (
-                <>
-                  <Card className="gap-2 py-4">
-                    <CardContent className="px-4">
-                      <p className="text-sm text-muted-foreground">Tokens</p>
-                      <p className="text-2xl font-semibold tabular-nums">
-                        {compactNumber(usageSummary.data.total_tokens)}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="gap-2 py-4">
-                    <CardContent className="px-4">
-                      <p className="text-sm text-muted-foreground">Est. cost</p>
-                      <p className="text-2xl font-semibold tabular-nums">
-                        {currency(usageSummary.data.cost_usd)}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </>
-              ) : null}
-              <Card className="gap-2 py-4">
-                <CardContent className="px-4">
-                  <p className="text-sm text-muted-foreground">Error rate</p>
-                  <p className="text-2xl font-semibold tabular-nums">
-                    {percent(usageSummary.data.error_rate)}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <Skeleton className="h-24 w-full" />
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Usage over time by member</CardTitle>
+              <CardDescription>
+                {hasTokenData ? "LLM tokens" : "Requests"} per teammate, across every API this team owns.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {usageByMemberSeries.isPending ? (
+                <Skeleton className="h-64 w-full" />
+              ) : memberChartSeries.length > 0 ? (
+                <TimeSeriesChart
+                  data={memberSeriesRows}
+                  interval={interval}
+                  series={memberChartSeries}
+                />
+              ) : (
+                <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+                  No requests yet in this range.
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card>

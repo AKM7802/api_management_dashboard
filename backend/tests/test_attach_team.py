@@ -89,6 +89,22 @@ def test_cannot_attach_api_already_in_a_team(client):
     assert r.status_code == 404  # not owned in personal mode (team_id is set)
 
 
+def test_cannot_attach_api_with_name_already_used_in_team(client):
+    owner_headers = signup(client, "owner@x.com")
+    team = create_team(client, owner_headers)
+    create_api(client, team_headers(owner_headers, team["id"]), name="Same Name")
+    personal_api = create_api(client, owner_headers, name="Same Name")
+
+    r = client.post(
+        f"/apis/{personal_api['id']}/attach-team",
+        json={"team_id": team["id"]},
+        headers=owner_headers,
+    )
+    assert r.status_code == 409
+    # stays personal, not partially attached
+    assert client.get(f"/apis/{personal_api['id']}", headers=owner_headers).json()["team_id"] is None
+
+
 def test_cannot_attach_to_a_team_youre_not_a_member_of(client):
     owner_headers = signup(client, "owner@x.com")
     api = create_api(client, owner_headers)

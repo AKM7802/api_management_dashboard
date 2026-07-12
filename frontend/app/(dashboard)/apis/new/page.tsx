@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { BackLink } from "@/components/back-link";
+import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +14,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Empty,
   EmptyDescription,
@@ -38,15 +47,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApiError, API_URL } from "@/lib/api";
 import {
   useActiveMembership,
   useAttachApiToTeam,
   useCreateApi,
   usePersonalApisForAttach,
 } from "@/lib/queries";
+import type { ManagedApiCreated } from "@/lib/types";
 
-function CreateApiForm({ onCreated }: { onCreated: (apiId: string) => void }) {
+function curlFor(token: string) {
+  return `curl ${API_URL}/proxy/your/path \\
+  -H "Authorization: Bearer ${token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{}'`;
+}
+
+function CreateApiForm({
+  onDone,
+  hasTeam,
+}: {
+  onDone: (apiId: string) => void;
+  hasTeam: boolean;
+}) {
   const create = useCreateApi();
+  const [created, setCreated] = useState<ManagedApiCreated | null>(null);
+  const nameError =
+    create.error instanceof ApiError && create.error.status === 409
+      ? create.error.message
+      : null;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,58 +87,137 @@ function CreateApiForm({ onCreated }: { onCreated: (apiId: string) => void }) {
         secret: form.get("secret") as string,
       },
       {
-        onSuccess: (created) => {
+        onSuccess: (data) => {
           toast.success("API added");
-          onCreated(created.id);
+          setCreated(data);
         },
       },
     );
   }
 
+  async function copyToken() {
+    if (created) {
+      await navigator.clipboard.writeText(created.token.token);
+      toast.success("Token copied");
+    }
+  }
+
   return (
-    <form onSubmit={onSubmit}>
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="name">Name</FieldLabel>
-          <Input id="name" name="name" required placeholder="My API" />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="base_url">Base URL</FieldLabel>
-          <Input
-            id="base_url"
-            name="base_url"
-            type="url"
-            required
-            placeholder="https://api.example.com"
-          />
-          <FieldDescription>
-            The upstream API&apos;s root URL. Requests to your proxy token are
-            forwarded here.
-          </FieldDescription>
-        </Field>
-        <Field data-invalid={create.isError ? true : undefined}>
-          <FieldLabel htmlFor="secret">API key</FieldLabel>
-          <Input
-            id="secret"
-            name="secret"
-            type="password"
-            required
-            autoComplete="off"
-            placeholder="sk-..."
-            aria-invalid={create.isError ? true : undefined}
-          />
-          <FieldDescription>
-            Sent over TLS, stored encrypted. Only the last 4 characters stay
-            visible.
-          </FieldDescription>
-          {create.isError ? <FieldError>{create.error.message}</FieldError> : null}
-        </Field>
-        <Button type="submit" disabled={create.isPending}>
-          {create.isPending ? <Spinner data-icon="inline-start" /> : null}
-          Add API
-        </Button>
-      </FieldGroup>
-    </form>
+    <>
+      <form onSubmit={onSubmit}>
+        <FieldGroup>
+          <Field data-invalid={nameError ? true : undefined}>
+            <FieldLabel htmlFor="name">Name</FieldLabel>
+            <Input
+              id="name"
+              name="name"
+              required
+              placeholder="My API"
+              aria-invalid={nameError ? true : undefined}
+            />
+            <FieldDescription>
+              Must be unique among your{hasTeam ? " team's" : ""} APIs.
+            </FieldDescription>
+            {nameError ? <FieldError>{nameError}</FieldError> : null}
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="base_url">Base URL</FieldLabel>
+            <Input
+              id="base_url"
+              name="base_url"
+              type="url"
+              required
+              placeholder="https://api.example.com"
+            />
+            <FieldDescription>
+              The upstream API&apos;s root URL. Requests to your proxy token are
+              forwarded here.
+            </FieldDescription>
+          </Field>
+          <Field data-invalid={create.isError && !nameError ? true : undefined}>
+            <FieldLabel htmlFor="secret">API key</FieldLabel>
+            <Input
+              id="secret"
+              name="secret"
+              type="password"
+              required
+              autoComplete="off"
+              placeholder="sk-..."
+              aria-invalid={create.isError && !nameError ? true : undefined}
+            />
+            <FieldDescription>
+              Sent over TLS, stored encrypted. Only the last 4 characters stay
+              visible.
+            </FieldDescription>
+            {create.isError && !nameError ? (
+              <FieldError>{create.error.message}</FieldError>
+            ) : null}
+          </Field>
+          <Button type="submit" disabled={create.isPending}>
+            {create.isPending ? <Spinner data-icon="inline-start" /> : null}
+            Add API
+          </Button>
+        </FieldGroup>
+      </form>
+
+      <Dialog
+        open={created !== null}
+        onOpenChange={(open) => {
+          if (!open && created) onDone(created.id);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>API added — save your token now</DialogTitle>
+            <DialogDescription>
+              A proxy token was created for you so you can start calling this
+              API right away. This is the only time it will be shown.
+            </DialogDescription>
+          </DialogHeader>
+          {created ? (
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[10.5px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    Base URL
+                  </span>
+                  <span className="truncate font-mono text-xs">
+                    {created.base_url}
+                  </span>
+                </div>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[10.5px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    API key
+                  </span>
+                  <span className="truncate font-mono text-xs">
+                    ••••{created.secret_last4}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10.5px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  Proxy token
+                </span>
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2 font-mono text-sm">
+                    {created.token.token}
+                  </code>
+                  <Button variant="outline" size="sm" onClick={copyToken}>
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <CodeBlock code={curlFor(created.token.token)} label="request.sh" />
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button onClick={() => created && onDone(created.id)}>
+              Go to API
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -131,6 +239,7 @@ function AttachExistingApi({
           toast.success("API added to the team");
           onAttached(updated.id);
         },
+        onError: (err) => toast.error(err.message),
       },
     );
   }
@@ -245,7 +354,7 @@ export default function NewApiPage() {
           ) : null}
 
           {mode === "create" || !team ? (
-            <CreateApiForm onCreated={goToApi} />
+            <CreateApiForm onDone={goToApi} hasTeam={!!team} />
           ) : (
             <AttachExistingApi teamId={team.id} onAttached={goToApi} />
           )}

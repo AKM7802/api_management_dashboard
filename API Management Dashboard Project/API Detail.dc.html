@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0}
+  :root{
+    --canvas:#f5f2eb;--panel:#ffffff;--panel-2:#faf8f3;--border:#ece7de;--border-2:#f3efe8;
+    --ink:#211f1b;--muted:#8a8378;--faint:#b5afa3;
+    --accent:#d9662e;--accent-soft:#fbeee4;--accent-ink:#b8501c;
+    --pos:#2e9e63;--pos-soft:#e9f4ee;--warn:#c2560f;--warn-soft:#fbf1e8;
+    --num:'JetBrains Mono',ui-monospace,monospace;
+  }
+  [data-theme="dark"]{
+    --canvas:#0e1013;--panel:#16191e;--panel-2:#12151a;--border:#262b31;--border-2:#1c2127;
+    --ink:#e8ebef;--muted:#7d868f;--faint:#4b535b;
+    --accent:#ef7a3e;--accent-soft:#2a1a10;--accent-ink:#ef7a3e;
+    --pos:#43c07a;--pos-soft:#152418;--warn:#f0a35e;--warn-soft:#241a10;
+    --num:'JetBrains Mono',ui-monospace,monospace;
+  }
+  [data-mono="off"]{--num:'Space Grotesk',system-ui,sans-serif}
+  a{color:var(--accent)}a:hover{color:var(--accent-ink)}
+</style>
+</helmet>
+
+<div data-screen-label="API Detail" data-theme="{{ theme }}" data-mono="{{ monoAttr }}" style="min-height:100vh;background:var(--canvas);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;transition:background .3s,color .3s;position:relative">
+
+  <!-- top nav -->
+  <div style="display:flex;align-items:center;gap:22px;padding:14px 26px;border-bottom:1px solid var(--border);background:var(--panel)">
+    <div style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.02em"><span style="width:19px;height:19px;background:var(--accent);border-radius:6px;display:inline-block"></span>apigate</div>
+    <div style="display:flex;gap:2px;font-size:13.5px;font-weight:500">
+      <span onClick="{{ goDash }}" style="padding:7px 13px;color:var(--muted);cursor:pointer">Overview</span>
+      <span style="padding:7px 13px;background:var(--accent-soft);color:var(--accent-ink);border-radius:8px;font-weight:600">APIs</span>
+      <span style="padding:7px 13px;color:var(--faint)">Members</span>
+    </div>
+    <div style="margin:0 auto;display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:999px;padding:6px 15px;font-size:13px;font-weight:600;background:var(--panel-2)">◇ Personal <span style="color:var(--faint);font-size:10px">▾</span></div>
+    <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;background:var(--panel-2);user-select:none">{{ themeIcon }}</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)"><span style="width:26px;height:26px;border-radius:999px;background:var(--border);display:inline-block"></span>me@acme.co</div>
+  </div>
+
+  <div style="max-width:1000px;margin:0 auto;padding:22px 26px 40px">
+
+    <!-- breadcrumb + API header -->
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px"><span onClick="{{ goDash }}" style="cursor:pointer;color:var(--accent-ink)">Overview</span> / APIs / <span style="color:var(--ink);font-weight:600">OpenAI prod</span></div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.02em">OpenAI prod <span style="color:var(--faint);font-size:15px;cursor:pointer">✎</span></div>
+      <span style="font-size:11.5px;font-family:var(--num);border:1px solid var(--border);border-radius:7px;padding:4px 10px;color:var(--muted)">api.openai.com</span>
+      <span style="font-size:11.5px;font-family:var(--num);border:1px solid var(--border);border-radius:7px;padding:4px 10px;color:var(--muted)">key ••••4f2a</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:11px">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">{{ activeLabel }}</span>
+        <div onClick="{{ toggleActive }}" style="{{ trackStyle }}"><div style="{{ knobStyle }}"></div></div>
+        <div style="border:1px solid var(--border);background:var(--panel);padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer">Rotate key</div>
+        <div style="border:1px solid var(--border);background:var(--panel);padding:7px 11px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer">•••</div>
+      </div>
+    </div>
+
+    <!-- tabs -->
+    <div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px">
+      <div onClick="{{ goUsage }}" style="{{ tabUsage }}">Usage</div>
+      <div onClick="{{ goTokens }}" style="{{ tabTokens }}">Access Tokens</div>
+      <div style="padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--faint);cursor:not-allowed">Access <span style="font-size:10px">· team only</span></div>
+    </div>
+
+    <!-- USAGE PANEL -->
+    <sc-if value="{{ isUsage }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div style="font-size:15px;font-weight:600">Usage</div>
+        <div style="display:flex;border:1px solid var(--border);border-radius:9px;padding:3px;font-size:12.5px;background:var(--panel)">
+          <span onClick="{{ set24 }}" style="{{ s24 }}">24h</span><span onClick="{{ set7 }}" style="{{ s7 }}">7d</span><span onClick="{{ set30 }}" style="{{ s30 }}">30d</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px">
+        <div style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Requests</div><div style="font-family:var(--num);font-size:24px;font-weight:600;margin-top:6px">82k</div></div>
+        <div style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Tokens</div><div style="font-family:var(--num);font-size:24px;font-weight:600;margin-top:6px">6.1M</div></div>
+        <div style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Est. cost</div><div style="font-family:var(--num);font-size:24px;font-weight:600;margin-top:6px">$31</div></div>
+        <div style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Avg latency</div><div style="font-family:var(--num);font-size:24px;font-weight:600;margin-top:6px">380ms</div></div>
+        <div style="border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Error rate</div><div style="font-family:var(--num);font-size:24px;font-weight:600;margin-top:6px">0.5%</div></div>
+      </div>
+      <div style="border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:17px 18px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">Requests over time</div><div style="font-size:11.5px;color:var(--muted);font-family:var(--num)">daily</div></div>
+        <svg viewBox="0 0 900 130" style="width:100%;height:120px;display:block" preserveAspectRatio="none">
+          <defs><linearGradient id="a2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.2"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs>
+          <path d="M0,92 L128,80 L257,86 L385,58 L514,68 L642,40 L771,52 L900,26 L900,130 L0,130 Z" fill="url(#a2)"/>
+          <path d="M0,92 L128,80 L257,86 L385,58 L514,68 L642,40 L771,52 L900,26" fill="none" style="stroke:var(--accent)" stroke-width="2.25" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:250px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:16px 18px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Status codes</div>
+          <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;margin-bottom:12px"><div style="width:96%;background:var(--pos)"></div><div style="width:3%;background:var(--warn)"></div><div style="width:1%;background:var(--accent)"></div></div>
+          <div style="display:flex;gap:16px;font-size:12px;font-family:var(--num)"><span style="color:var(--pos)">■ 2xx 96%</span><span style="color:var(--warn)">■ 4xx 3%</span><span style="color:var(--accent)">■ 5xx 1%</span></div>
+        </div>
+        <div style="flex:1;min-width:250px;border:1px solid var(--border);background:var(--panel);border-radius:14px;padding:16px 18px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Models used</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;margin-bottom:8px"><span style="width:120px">gpt-4o</span><div style="flex:1;height:8px;border-radius:999px;background:var(--border-2)"><div style="width:58%;height:8px;border-radius:999px;background:var(--accent)"></div></div><span style="font-family:var(--num);color:var(--muted)">58%</span></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px"><span style="width:120px">gpt-4o-mini</span><div style="flex:1;height:8px;border-radius:999px;background:var(--border-2)"><div style="width:42%;height:8px;border-radius:999px;background:color-mix(in oklab,var(--accent) 55%,var(--panel))"></div></div><span style="font-family:var(--num);color:var(--muted)">42%</span></div>
+        </div>
+      </div>
+      <div style="border:1px solid var(--border);background:var(--panel);border-radius:14px;overflow:hidden">
+        <div style="display:flex;padding:11px 18px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border-2)"><span style="width:90px">Time</span><span style="flex:1">Path</span><span style="width:110px">Model</span><span style="width:80px;font-family:var(--num)">Tokens</span><span style="width:60px;font-family:var(--num)">ms</span><span style="width:60px">Status</span></div>
+        <div style="display:flex;align-items:center;padding:11px 18px;font-size:12.5px;border-bottom:1px solid var(--border-2)"><span style="width:90px;font-family:var(--num);color:var(--muted)">12:04:11</span><span style="flex:1;font-family:var(--num)">/v1/chat/completions</span><span style="width:110px">gpt-4o</span><span style="width:80px;font-family:var(--num)">1,204</span><span style="width:60px;font-family:var(--num)">410</span><span style="width:60px"><span style="font-size:10.5px;font-weight:600;color:var(--pos);background:var(--pos-soft);padding:2px 7px;border-radius:999px">200</span></span></div>
+        <div style="display:flex;align-items:center;padding:11px 18px;font-size:12.5px;border-bottom:1px solid var(--border-2)"><span style="width:90px;font-family:var(--num);color:var(--muted)">12:04:02</span><span style="flex:1;font-family:var(--num)">/v1/chat/completions</span><span style="width:110px">gpt-4o-mini</span><span style="width:80px;font-family:var(--num)">642</span><span style="width:60px;font-family:var(--num)">288</span><span style="width:60px"><span style="font-size:10.5px;font-weight:600;color:var(--pos);background:var(--pos-soft);padding:2px 7px;border-radius:999px">200</span></span></div>
+        <div style="display:flex;align-items:center;padding:11px 18px;font-size:12.5px"><span style="width:90px;font-family:var(--num);color:var(--muted)">12:03:55</span><span style="flex:1;font-family:var(--num)">/v1/embeddings</span><span style="width:110px;color:var(--faint)">—</span><span style="width:80px;font-family:var(--num);color:var(--faint)">—</span><span style="width:60px;font-family:var(--num)">120</span><span style="width:60px"><span style="font-size:10.5px;font-weight:600;color:var(--warn);background:var(--warn-soft);padding:2px 7px;border-radius:999px">429</span></span></div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- TOKENS PANEL -->
+    <sc-if value="{{ isTokens }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Proxy tokens</div><div onClick="{{ openModal }}" style="background:var(--accent);color:#fff;padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">+ Create token</div></div>
+      <div style="border:1px solid var(--border);background:var(--panel);border-radius:14px;overflow:hidden">
+        <div style="display:flex;padding:11px 18px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border-2)"><span style="flex:1.4">Label</span><span style="flex:1.4">Token</span><span style="width:100px">Created</span><span style="width:100px">Last used</span><span style="width:80px"></span></div>
+        <div style="display:flex;align-items:center;padding:12px 18px;font-size:13px;border-bottom:1px solid var(--border-2)"><span style="flex:1.4;font-weight:500">prod-server</span><span style="flex:1.4;font-family:var(--num);color:var(--muted)">xpxy_live_…a4f2</span><span style="width:100px;color:var(--muted)">Jun 2</span><span style="width:100px;color:var(--muted)">2m ago</span><span style="width:80px"><span style="border:1px solid var(--border);padding:4px 10px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer">Revoke</span></span></div>
+        <div style="display:flex;align-items:center;padding:12px 18px;font-size:13px"><span style="flex:1.4;font-weight:500">ci-pipeline</span><span style="flex:1.4;font-family:var(--num);color:var(--muted)">xpxy_live_…9b1c</span><span style="width:100px;color:var(--muted)">May 18</span><span style="width:100px;color:var(--muted)">1d ago</span><span style="width:80px"><span style="border:1px solid var(--border);padding:4px 10px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer">Revoke</span></span></div>
+      </div>
+      <div style="font-size:12.5px;color:var(--muted)">Revoke is per-token and immediate — the API's other tokens keep working.</div>
+    </div>
+    </sc-if>
+  </div>
+
+  <!-- TOKEN REVEAL MODAL -->
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(15,13,10,.55);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="width:540px;max-width:100%;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div style="font-size:15px;font-weight:700">Token created</div><div onClick="{{ closeModal }}" style="font-size:15px;color:var(--muted);cursor:pointer">✕</div></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:9px;align-items:center;background:var(--warn-soft);border:1px solid color-mix(in oklab,var(--warn) 40%,var(--panel));border-radius:10px;padding:10px 13px;font-size:12.5px;color:var(--warn);font-weight:500">⚠ Copy this now — it's shown once and can't be recovered.</div>
+        <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--panel-2)"><span style="font-family:var(--num);font-size:13px;letter-spacing:.02em;flex:1;overflow:hidden;text-overflow:ellipsis">xpxy_live_8fK2p6Rz…4f2aQ9</span><div style="background:var(--accent);color:#fff;padding:6px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer">⧉ Copy</div></div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600">Example request</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 14px;background:var(--panel-2);font-family:var(--num);font-size:12px;line-height:1.8;color:var(--ink)">curl https://apigate.io/proxy/v1/chat/completions \<br>&nbsp;&nbsp;-H "Authorization: Bearer xpxy_live_…" \<br>&nbsp;&nbsp;-d '{ "model":"gpt-4o", … }'</div>
+        <div onClick="{{ closeModal }}" style="align-self:flex-end;background:var(--ink);color:var(--canvas);padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">Done</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1040,&quot;height&quot;:820},&quot;defaultDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;monoNumbers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  state = { dark: null, range: '7d', tab: 'usage', modal: false, active: true };
+  componentDidMount() { try { const v = localStorage.getItem('apigate-theme'); if (v != null && this.state.dark == null) this.setState({ dark: v === 'dark' }); } catch (e) {} }
+  setTheme(nd) { try { localStorage.setItem('apigate-theme', nd ? 'dark' : 'light'); } catch (e) {} this.setState({ dark: nd }); }
+  get isDark() { return this.state.dark == null ? (this.props.defaultDark ?? false) : this.state.dark; }
+  seg(on) {
+    return on
+      ? 'padding:6px 14px;background:var(--ink);color:var(--panel);border-radius:7px;font-weight:600;cursor:pointer'
+      : 'padding:6px 14px;color:var(--muted);font-weight:600;cursor:pointer';
+  }
+  tab(on) {
+    return on
+      ? 'padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--accent-ink);border-bottom:2px solid var(--accent);cursor:pointer'
+      : 'padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer';
+  }
+  renderVals() {
+    const dark = this.isDark, r = this.state.range, active = this.state.active;
+    return {
+      theme: dark ? 'dark' : 'light',
+      monoAttr: (this.props.monoNumbers ?? true) ? 'on' : 'off',
+      themeIcon: dark ? '☀' : '☾',
+      toggleTheme: () => this.setTheme(!dark),
+      goDash: () => { window.location.href = 'API Dashboard.dc.html'; },
+      s24: this.seg(r === '24h'), s7: this.seg(r === '7d'), s30: this.seg(r === '30d'),
+      set24: () => this.setState({ range: '24h' }), set7: () => this.setState({ range: '7d' }), set30: () => this.setState({ range: '30d' }),
+      isUsage: this.state.tab === 'usage', isTokens: this.state.tab === 'tokens',
+      tabUsage: this.tab(this.state.tab === 'usage'), tabTokens: this.tab(this.state.tab === 'tokens'),
+      goUsage: () => this.setState({ tab: 'usage' }), goTokens: () => this.setState({ tab: 'tokens' }),
+      modal: this.state.modal, openModal: () => this.setState({ modal: true }), closeModal: () => this.setState({ modal: false }),
+      active, activeLabel: active ? 'active' : 'disabled',
+      toggleActive: () => this.setState({ active: !active }),
+      trackStyle: 'width:38px;height:22px;border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';border-radius:999px;background:' + (active ? 'var(--accent)' : 'var(--panel-2)') + ';position:relative;cursor:pointer;transition:background .2s',
+      knobStyle: 'width:15px;height:15px;background:#fff;border-radius:999px;position:absolute;top:2.5px;' + (active ? 'right:3px' : 'left:3px') + ';transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.25)',
+    };
+  }
+}
+</script>
+</body>
+</html>

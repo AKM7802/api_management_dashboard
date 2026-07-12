@@ -53,87 +53,86 @@
 }
 
 /*
-  Brand palette — validated with the dataviz skill's six-check script
-  (node scripts/validate_palette.js) for both light and dark surfaces.
-  Categorical order is fixed (never re-cycled): blue, aqua, yellow, violet.
-  Status colors (good/warning/serious/critical) are a separate fixed scale,
-  never reused for chart series identity.
+  "apigate" brand palette — warm cream canvas + burnt-orange accent, matching
+  the reference wireframes (API Management Dashboard Project/*.dc.html).
+  Chart series are accent-tinted (monochromatic) per the wireframe's donut
+  charts; status colors (good/warning/serious/critical) stay a separate scale.
 */
 :root {
-  --background: oklch(0.995 0.003 250);
-  --foreground: oklch(0.17 0.02 258);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.02 258);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.17 0.02 258);
-  --primary: #2a78d6;
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 258);
-  --secondary-foreground: oklch(0.22 0.03 258);
-  --muted: oklch(0.965 0.007 258);
-  --muted-foreground: oklch(0.48 0.02 258);
-  --accent: oklch(0.94 0.025 258);
-  --accent-foreground: oklch(0.25 0.06 258);
-  --destructive: #d03b3b;
-  --border: oklch(0.906 0.008 258);
-  --input: oklch(0.882 0.01 258);
-  --ring: #2a78d6;
-  --chart-1: #2a78d6; /* requests — blue */
-  --chart-2: #1baf7a; /* tokens — aqua */
-  --chart-3: #eda100; /* cost — amber */
-  --chart-4: #4a3aa7; /* latency — violet */
-  --chart-5: #d03b3b; /* errors — reserved status red */
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-serious: #ec835a;
-  --status-critical: #d03b3b;
-  --radius: 0.75rem;
-  --sidebar: oklch(0.98 0.004 258);
-  --sidebar-foreground: oklch(0.17 0.02 258);
-  --sidebar-primary: #2a78d6;
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.025 258);
-  --sidebar-accent-foreground: oklch(0.25 0.06 258);
-  --sidebar-border: oklch(0.906 0.008 258);
-  --sidebar-ring: #2a78d6;
+  --background: #f5f2eb;
+  --foreground: #211f1b;
+  --card: #ffffff;
+  --card-foreground: #211f1b;
+  --popover: #ffffff;
+  --popover-foreground: #211f1b;
+  --primary: #d9662e;
+  --primary-foreground: #ffffff;
+  --secondary: #faf8f3;
+  --secondary-foreground: #211f1b;
+  --muted: #faf8f3;
+  --muted-foreground: #8a8378;
+  --accent: #fbeee4;
+  --accent-foreground: #b8501c;
+  --destructive: #c23b2e;
+  --border: #ece7de;
+  --input: #ece7de;
+  --ring: #d9662e;
+  --chart-1: #d9662e;
+  --chart-2: color-mix(in oklab, #d9662e 55%, #ffffff);
+  --chart-3: color-mix(in oklab, #d9662e 22%, #ffffff);
+  --chart-4: #2e9e63;
+  --chart-5: #c23b2e;
+  --status-good: #2e9e63;
+  --status-warning: #c2560f;
+  --status-serious: #b8501c;
+  --status-critical: #c23b2e;
+  --radius: 0.7rem;
+  --sidebar: #faf8f3;
+  --sidebar-foreground: #211f1b;
+  --sidebar-primary: #d9662e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fbeee4;
+  --sidebar-accent-foreground: #b8501c;
+  --sidebar-border: #ece7de;
+  --sidebar-ring: #d9662e;
 }
 
 .dark {
-  --background: oklch(0.15 0.006 258);
-  --foreground: oklch(0.98 0.002 258);
-  --card: oklch(0.195 0.008 258);
-  --card-foreground: oklch(0.98 0.002 258);
-  --popover: oklch(0.195 0.008 258);
-  --popover-foreground: oklch(0.98 0.002 258);
-  --primary: #5b9ce8;
-  --primary-foreground: oklch(0.15 0.01 258);
-  --secondary: oklch(0.255 0.012 258);
-  --secondary-foreground: oklch(0.95 0.002 258);
-  --muted: oklch(0.235 0.01 258);
-  --muted-foreground: oklch(0.7 0.015 258);
-  --accent: oklch(0.28 0.03 258);
-  --accent-foreground: oklch(0.95 0.01 258);
-  --destructive: #e0605f;
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: #5b9ce8;
-  --chart-1: #3987e5; /* requests — blue */
-  --chart-2: #199e70; /* tokens — aqua */
-  --chart-3: #c98500; /* cost — amber */
-  --chart-4: #9085e9; /* latency — violet */
-  --chart-5: #e0605f; /* errors — reserved status red */
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-serious: #ec835a;
-  --status-critical: #e0605f;
-  --sidebar: oklch(0.18 0.008 258);
-  --sidebar-foreground: oklch(0.98 0.002 258);
-  --sidebar-primary: #5b9ce8;
-  --sidebar-primary-foreground: oklch(0.15 0.01 258);
-  --sidebar-accent: oklch(0.28 0.03 258);
-  --sidebar-accent-foreground: oklch(0.95 0.01 258);
-  --sidebar-border: oklch(1 0 0 / 11%);
-  --sidebar-ring: #5b9ce8;
+  --background: #0e1013;
+  --foreground: #e8ebef;
+  --card: #16191e;
+  --card-foreground: #e8ebef;
+  --popover: #16191e;
+  --popover-foreground: #e8ebef;
+  --primary: #ef7a3e;
+  --primary-foreground: #16191e;
+  --secondary: #12151a;
+  --secondary-foreground: #e8ebef;
+  --muted: #12151a;
+  --muted-foreground: #7d868f;
+  --accent: #2a1a10;
+  --accent-foreground: #ef7a3e;
+  --destructive: #e2685a;
+  --border: #262b31;
+  --input: #262b31;
+  --ring: #ef7a3e;
+  --chart-1: #ef7a3e;
+  --chart-2: color-mix(in oklab, #ef7a3e 55%, #16191e);
+  --chart-3: color-mix(in oklab, #ef7a3e 22%, #16191e);
+  --chart-4: #43c07a;
+  --chart-5: #e2685a;
+  --status-good: #43c07a;
+  --status-warning: #f0a35e;
+  --status-serious: #ef7a3e;
+  --status-critical: #e2685a;
+  --sidebar: #12151a;
+  --sidebar-foreground: #e8ebef;
+  --sidebar-primary: #ef7a3e;
+  --sidebar-primary-foreground: #16191e;
+  --sidebar-accent: #2a1a10;
+  --sidebar-accent-foreground: #ef7a3e;
+  --sidebar-border: #262b31;
+  --sidebar-ring: #ef7a3e;
 }
 
 @layer base {
@@ -145,5 +144,34 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  /* Fades in a shadow at whichever edge still has scrollable content —
+     the classic four-background trick: the two --card-colored gradients
+     paint over the content as it scrolls under them (background-attachment:
+     local scrolls with the content), while the two shadow gradients stay
+     fixed to the viewport (background-attachment: scroll) so they only
+     show where a --card gradient hasn't already covered them, i.e. only at
+     an edge that still has more to reveal. No JS needed. */
+  .scroll-shadow-x {
+    background:
+      linear-gradient(to right, var(--card) 40%, transparent) local,
+      linear-gradient(to left, var(--card) 40%, transparent) local,
+      linear-gradient(to right, rgba(0, 0, 0, 0.18), transparent 14px) scroll,
+      linear-gradient(to left, rgba(0, 0, 0, 0.18), transparent 14px) scroll;
+    background-repeat: no-repeat;
+    background-color: var(--card);
+    background-size:
+      40px 100%,
+      40px 100%,
+      14px 100%,
+      14px 100%;
+    background-position:
+      left center,
+      right center,
+      left center,
+      right center;
   }
 }

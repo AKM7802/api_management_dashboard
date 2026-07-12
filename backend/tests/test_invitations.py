@@ -21,7 +21,8 @@ def test_invite_and_accept_happy_path(client):
     preview = client.get(f"/invitations/{invite['token']}", headers=invitee_headers)
     assert preview.status_code == 200
     assert preview.json() == {
-        "team_name": team["name"], "role": "member", "email": "invitee@x.com",
+        "team_id": team["id"], "team_name": team["name"], "role": "member",
+        "email": "invitee@x.com",
     }
 
     # must also work with NO auth at all — the whole point is letting someone
@@ -100,6 +101,35 @@ def test_duplicate_invite_for_pending_email_rejected(client):
         headers=owner_headers,
     )
     assert r.status_code == 409
+
+
+def test_invite_can_only_be_accepted_by_the_invited_email(client):
+    owner_headers = signup(client, "owner@x.com")
+    team = create_team(client, owner_headers)
+    invite = client.post(
+        f"/teams/{team['id']}/invitations",
+        json={"email": "intended@x.com", "role": "member"},
+        headers=owner_headers,
+    ).json()
+
+    # a logged-in user who isn't the intended recipient must not be able to
+    # claim this link just by knowing the token (e.g. a forwarded/leaked URL)
+    imposter_headers = signup(client, "imposter@x.com")
+    r = client.post(
+        "/invitations/accept",
+        json={"token": invite["token"]},
+        headers=imposter_headers,
+    )
+    assert r.status_code == 403
+
+    # the actual invitee still can
+    invitee_headers = signup(client, "intended@x.com")
+    r = client.post(
+        "/invitations/accept",
+        json={"token": invite["token"]},
+        headers=invitee_headers,
+    )
+    assert r.status_code == 204
 
 
 def test_invite_for_existing_member_rejected(client):

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0}
+  :root{
+    --canvas:#f5f2eb;--panel:#ffffff;--panel-2:#faf8f3;--border:#ece7de;--border-2:#f3efe8;
+    --ink:#211f1b;--muted:#8a8378;--faint:#b5afa3;
+    --accent:#d9662e;--accent-soft:#fbeee4;--accent-ink:#b8501c;
+    --num:'JetBrains Mono',ui-monospace,monospace;
+  }
+  [data-theme="dark"]{
+    --canvas:#0e1013;--panel:#16191e;--panel-2:#12151a;--border:#262b31;--border-2:#1c2127;
+    --ink:#e8ebef;--muted:#7d868f;--faint:#4b535b;
+    --accent:#ef7a3e;--accent-soft:#2a1a10;--accent-ink:#ef7a3e;
+  }
+  a{color:var(--accent)}
+</style>
+</helmet>
+
+<div data-screen-label="Invite Accept" data-theme="{{ theme }}" style="min-height:100vh;background:var(--canvas);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;transition:background .3s,color .3s;display:flex;align-items:center;justify-content:center;padding:32px;position:relative">
+
+  <div onClick="{{ toggleTheme }}" style="position:absolute;top:22px;right:26px;width:34px;height:34px;border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;background:var(--panel-2)">{{ themeIcon }}</div>
+
+  <div style="width:440px;max-width:100%;border:1px solid var(--border);border-radius:20px;overflow:hidden;background:var(--panel);box-shadow:0 24px 60px rgba(40,30,20,.14)">
+    <div style="padding:36px 34px 30px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
+      <div style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;letter-spacing:-.02em"><span style="width:19px;height:19px;background:var(--accent);border-radius:6px;display:inline-block"></span>apigate</div>
+      <div style="font-size:13.5px;color:var(--muted);margin-top:6px">You've been invited to join</div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:34px;height:34px;background:var(--accent);border-radius:10px;display:inline-block"></span><span style="font-size:26px;font-weight:700;letter-spacing:-.02em">Acme Team</span></div>
+      <div style="font-size:12px;font-weight:600;font-family:var(--num);color:var(--accent-ink);background:var(--accent-soft);padding:5px 13px;border-radius:999px">ROLE · MEMBER</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5;max-width:320px">Members can mint their own tokens and see their own usage for the APIs an admin grants them.</div>
+      <a href="Auth.dc.html" style="display:block;width:100%;box-sizing:border-box;background:var(--accent);color:#fff;padding:12px;border-radius:10px;font-size:14px;font-weight:600;text-align:center;text-decoration:none;margin-top:6px">Log in or sign up to accept</a>
+      <div style="font-size:11.5px;color:var(--faint);font-family:var(--num)">invite/9fK2b8… · expires in 7 days · bound to new@acme.co</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:520},&quot;defaultDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  state = { dark: null };
+  componentDidMount() { try { const v = localStorage.getItem('apigate-theme'); if (v != null && this.state.dark == null) this.setState({ dark: v === 'dark' }); } catch (e) {} }
+  get isDark() { return this.state.dark == null ? (this.props.defaultDark ?? false) : this.state.dark; }
+  setTheme(nd) { try { localStorage.setItem('apigate-theme', nd ? 'dark' : 'light'); } catch (e) {} this.setState({ dark: nd }); }
+  renderVals() {
+    const dark = this.isDark;
+    return { theme: dark ? 'dark' : 'light', themeIcon: dark ? '☀' : '☾', toggleTheme: () => this.setTheme(!dark) };
+  }
+}
+</script>
+</body>
+</html>

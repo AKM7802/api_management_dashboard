@@ -4,9 +4,10 @@ import { AlertTriangle, Binary, Clock, DollarSign, Zap } from "lucide-react";
 import { useState } from "react";
 
 import { BarList } from "@/components/charts/bar-list";
-import { DonutChart } from "@/components/charts/donut-chart";
+import { StatusBar } from "@/components/charts/status-bar";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { KpiCard } from "@/components/kpi-card";
+import { MemberApiUsageDialog } from "@/components/member-api-usage-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
@@ -85,6 +86,9 @@ export function UsagePanel({
 }) {
   const [range, setRange] = useState<StatsRange>("7d");
   const [metric, setMetric] = useState<MetricKey>("requests");
+  const [selectedMember, setSelectedMember] = useState<{ user_id: string; email: string } | null>(
+    null,
+  );
   const interval: StatsInterval = range === "24h" ? "hour" : "day";
   const showByMember = !!teamId && !!isAdmin;
   const byMember = useApiUsageByMember(apiId, range, showByMember);
@@ -169,69 +173,67 @@ export function UsagePanel({
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-            <CardTitle className="font-heading">Usage over time</CardTitle>
-            <Tabs value={activeMetric.key} onValueChange={(v) => setMetric(v as MetricKey)}>
-              <TabsList>
-                {METRICS.map((m) => (
-                  <TabsTrigger key={m.key} value={m.key}>
-                    {m.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-          <CardContent>
-            {stats.isPending ? (
-              <Skeleton className="h-64 w-full" />
-            ) : stats.data && stats.data.length > 0 ? (
-              <TimeSeriesChart
-                data={stats.data}
-                interval={interval}
-                integerYAxis={activeMetric.key !== "cost_usd"}
-                series={[
-                  {
-                    key: activeMetric.key,
-                    label: activeMetric.label,
-                    color: activeMetric.color,
-                    format: activeMetric.format,
-                  },
-                ]}
-              />
-            ) : (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyTitle>No requests yet</EmptyTitle>
-                  <EmptyDescription>
-                    Send a request through your proxy token and it will show
-                    up here.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            )}
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+          <CardTitle className="font-heading">Usage over time</CardTitle>
+          <Tabs value={activeMetric.key} onValueChange={(v) => setMetric(v as MetricKey)}>
+            <TabsList>
+              {METRICS.map((m) => (
+                <TabsTrigger key={m.key} value={m.key}>
+                  {m.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent>
+          {stats.isPending ? (
+            <Skeleton className="h-64 w-full" />
+          ) : stats.data && stats.data.length > 0 ? (
+            <TimeSeriesChart
+              data={stats.data}
+              interval={interval}
+              integerYAxis={activeMetric.key !== "cost_usd"}
+              series={[
+                {
+                  key: activeMetric.key,
+                  label: activeMetric.label,
+                  color: activeMetric.color,
+                  format: activeMetric.format,
+                },
+              ]}
+            />
+          ) : (
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>No requests yet</EmptyTitle>
+                <EmptyDescription>
+                  Create an access token from the Access Tokens tab, then send
+                  a request through it — it&apos;ll show up here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </CardContent>
+      </Card>
 
+      <div className={`grid gap-4 ${isLikelyLlm ? "lg:grid-cols-2" : ""}`}>
         <Card>
           <CardHeader>
-            <CardTitle className="font-heading">Status mix</CardTitle>
+            <CardTitle className="font-heading">Status codes</CardTitle>
             <p className="text-xs text-muted-foreground">Last {logs.data?.length ?? 0} requests</p>
           </CardHeader>
           <CardContent>
             {logs.isPending ? (
-              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-16 w-full" />
             ) : statuses.length > 0 ? (
-              <DonutChart data={statuses} height={160} />
+              <StatusBar data={statuses} />
             ) : (
               <p className="text-sm text-muted-foreground">No requests yet.</p>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      <div className={`grid gap-4 ${isLikelyLlm ? "lg:grid-cols-3" : ""}`}>
         {isLikelyLlm ? (
           <Card>
             <CardHeader>
@@ -249,64 +251,69 @@ export function UsagePanel({
             </CardContent>
           </Card>
         ) : null}
-
-        <Card className={isLikelyLlm ? "lg:col-span-2" : ""}>
-          <CardHeader>
-            <CardTitle className="font-heading">Recent requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {logs.data && logs.data.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    {isLikelyLlm ? <TableHead>Model</TableHead> : null}
-                    <TableHead>Status</TableHead>
-                    {isLikelyLlm ? (
-                      <TableHead className="text-right">LLM Tokens</TableHead>
-                    ) : null}
-                    <TableHead className="text-right">Latency</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.data.slice(0, 10).map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {new Date(r.ts + "Z").toLocaleString()}
-                      </TableCell>
-                      {isLikelyLlm ? <TableCell>{r.model || "—"}</TableCell> : null}
-                      <TableCell
-                        className={
-                          r.status_code >= 400 ? "text-destructive" : undefined
-                        }
-                      >
-                        {r.status_code}
-                      </TableCell>
-                      {isLikelyLlm ? (
-                        <TableCell className="text-right tabular-nums">
-                          {r.total_tokens.toLocaleString()}
-                        </TableCell>
-                      ) : null}
-                      <TableCell className="text-right tabular-nums">
-                        {r.latency_ms} ms
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground">No requests yet.</p>
-            )}
-          </CardContent>
-        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-heading">Recent requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {logs.data && logs.data.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Endpoint</TableHead>
+                  {isLikelyLlm ? <TableHead>Model</TableHead> : null}
+                  <TableHead>Status</TableHead>
+                  {isLikelyLlm ? (
+                    <TableHead className="text-right">LLM Tokens</TableHead>
+                  ) : null}
+                  <TableHead className="text-right">Latency</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.data.slice(0, 10).map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {new Date(r.ts + "Z").toLocaleString()}
+                    </TableCell>
+                    <TableCell className="max-w-56 truncate font-mono text-xs">
+                      {r.path}
+                    </TableCell>
+                    {isLikelyLlm ? <TableCell>{r.model || "—"}</TableCell> : null}
+                    <TableCell
+                      className={
+                        r.status_code >= 400 ? "text-destructive" : undefined
+                      }
+                    >
+                      {r.status_code}
+                    </TableCell>
+                    {isLikelyLlm ? (
+                      <TableCell className="text-right tabular-nums">
+                        {r.total_tokens.toLocaleString()}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className="text-right tabular-nums">
+                      {r.latency_ms} ms
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">No requests yet.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {showByMember ? (
         <Card>
           <CardHeader>
             <CardTitle className="font-heading">Usage by member</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Owners and admins see everyone; members only ever see their own.
+              Owners and admins see everyone; members only ever see their own. Click a row for that
+              member&apos;s detail.
             </p>
           </CardHeader>
           <CardContent>
@@ -329,8 +336,16 @@ export function UsagePanel({
                 </TableHeader>
                 <TableBody>
                   {byMember.data.map((row) => (
-                    <TableRow key={row.user_id}>
-                      <TableCell>{row.email}</TableCell>
+                    <TableRow
+                      key={row.user_id}
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setSelectedMember({ user_id: row.user_id, email: row.email })
+                      }
+                    >
+                      <TableCell className="font-medium underline-offset-4 hover:underline">
+                        {row.email}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {row.requests.toLocaleString()}
                       </TableCell>
@@ -357,6 +372,16 @@ export function UsagePanel({
           </CardContent>
         </Card>
       ) : null}
+
+      <MemberApiUsageDialog
+        apiId={apiId}
+        member={selectedMember}
+        isLikelyLlm={isLikelyLlm}
+        open={!!selectedMember}
+        onOpenChange={(open) => {
+          if (!open) setSelectedMember(null);
+        }}
+      />
     </div>
   );
 }
