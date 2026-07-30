@@ -1,8 +1,8 @@
 name: Deploy (prod)
 
 # Build-and-dispatch: this repo never touches the deploy server. It builds images,
-# pushes to GHCR, and asks aswinkunju/infra (the only repo holding the deploy cert)
-# to roll them out. See aswinkunju/infra docs/CI_CD_WORKFLOW.md for the full model.
+# pushes to GHCR, and asks aswinkunju/infra-server (the only repo holding the deploy cert)
+# to roll them out. See aswinkunju/infra-server docs/CI_CD_WORKFLOW.md for the full model.
 
 on:
   push:
@@ -12,10 +12,9 @@ env:
   REGISTRY: ghcr.io
   OWNER: aswinkunju
   APP: api-mgmt-dashboard
-  # PLACEHOLDER — replace with the real public API domain before merging (see
-  # aswinkunju/infra apps/api-mgmt-dashboard/README.md). Baked into the frontend JS
-  # bundle at build time; changing it later requires a rebuild, not just a redeploy.
-  API_PUBLIC_URL: https://api-dashboard.example.com
+  # Baked into the frontend JS bundle at build time; changing it later requires a
+  # rebuild, not just a redeploy (see aswinkunju/infra-server apps/api-mgmt-dashboard/README.md).
+  API_PUBLIC_URL: https://api-dashboard.bytesprint.io
 
 jobs:
   secret-scan:
@@ -95,7 +94,7 @@ jobs:
       - uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-          repository: aswinkunju/infra
+          repository: aswinkunju/infra-server
           event-type: deploy
           client-payload: >-
             {"app": "${{ env.APP }}", "env": "prod", "image_tag": "${{ steps.tag.outputs.tag }}"}
@@ -110,6 +109,8 @@ jobs:
     steps:
       - uses: actions/delete-package-versions@v5
         with:
+          owner: ${{ env.OWNER }}
+          token: ${{ secrets.GHCR_TOKEN }}
           package-name: ${{ env.APP }}-${{ matrix.target }}
           package-type: container
           min-versions-to-keep: 10

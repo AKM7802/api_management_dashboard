@@ -1,7 +1,7 @@
 name: Deploy to Staging
 
-# Manual, any branch: build the chosen branch's HEAD and ask aswinkunju/infra to roll
-# it out to the apimgmt-staging stack. See aswinkunju/infra docs/CI_CD_WORKFLOW.md §3.
+# Manual, any branch: build the chosen branch's HEAD and ask aswinkunju/infra-server to roll
+# it out to the apimgmt-staging stack. See aswinkunju/infra-server docs/CI_CD_WORKFLOW.md §3.
 
 on:
   workflow_dispatch:
@@ -15,9 +15,9 @@ env:
   REGISTRY: ghcr.io
   OWNER: aswinkunju
   APP: api-mgmt-dashboard
-  # PLACEHOLDER — replace with the real staging API domain (see
-  # aswinkunju/infra apps/api-mgmt-dashboard/README.md).
-  API_PUBLIC_URL: https://test.api-dashboard.example.com
+  # Baked into the staging frontend JS bundle at build time (see
+  # aswinkunju/infra-server apps/api-mgmt-dashboard/README.md).
+  API_PUBLIC_URL: https://test.api-dashboard.bytesprint.io
 
 jobs:
   build:
@@ -65,7 +65,7 @@ jobs:
       - uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-          repository: aswinkunju/infra
+          repository: aswinkunju/infra-server
           event-type: deploy
           client-payload: >-
             {"app": "${{ env.APP }}", "env": "staging", "image_tag": "${{ steps.tag.outputs.tag }}"}
