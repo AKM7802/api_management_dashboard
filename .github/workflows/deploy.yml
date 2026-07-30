@@ -6,7 +6,7 @@ name: Deploy (prod)
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 env:
   REGISTRY: ghcr.io
@@ -39,7 +39,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sha=$(gh run list --workflow=deploy.yml --branch=main --status=success \
+          sha=$(gh run list --workflow=deploy.yml --branch=master --status=success \
                   --json headSha --jq '.[0].headSha' --limit 1 || true)
           echo "sha=${sha:-HEAD^}" >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v3
