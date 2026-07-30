@@ -1,11 +1,13 @@
 """Signup / login / current-user."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.alerts import send_signup_alert
+from app.config import get_settings
 from app.db.postgres import get_db
 from app.security import (
     create_access_token,
@@ -35,13 +37,21 @@ def get_current_user(
 
 
 @router.post("/signup", response_model=schemas.TokenResponse, status_code=201)
-def signup(body: schemas.SignupRequest, db: Session = Depends(get_db)):
+def signup(
+    body: schemas.SignupRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     existing = db.scalar(select(models.User).where(models.User.email == body.email))
     if existing is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
     user = models.User(email=body.email, password_hash=hash_password(body.password))
     db.add(user)
     db.commit()
+    background_tasks.add_task(
+        send_signup_alert, request.app.state.http_client, get_settings(), user.email
+    )
     return schemas.TokenResponse(access_token=create_access_token(user.id))
 
 

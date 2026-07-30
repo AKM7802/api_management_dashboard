@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     usage_flush_interval_seconds: float = 1.0
     usage_flush_batch_size: int = 100
 
+    # shared alert-relay (see aswinkunju/infra-server apps/alert-relay/) — unset means
+    # signups simply don't alert, nothing else depends on these
+    alert_relay_url: str | None = None
+    alert_relay_api_key: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
