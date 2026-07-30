@@ -1,0 +1,116 @@
+name: Deploy (prod)
+
+# Build-and-dispatch: this repo never touches the deploy server. It builds images,
+# pushes to GHCR, and asks aswinkunju/infra (the only repo holding the deploy cert)
+# to roll them out. See aswinkunju/infra docs/CI_CD_WORKFLOW.md for the full model.
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: aswinkunju
+  APP: api-mgmt-dashboard
+  # PLACEHOLDER — replace with the real public API domain before merging (see
+  # aswinkunju/infra apps/api-mgmt-dashboard/README.md). Baked into the frontend JS
+  # bundle at build time; changing it later requires a rebuild, not just a redeploy.
+  API_PUBLIC_URL: https://api-dashboard.example.com
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  changes:
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: find last successful run
+        id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh run list --workflow=deploy.yml --branch=main --status=success \
+                  --json headSha --jq '.[0].headSha' --limit 1 || true)
+          echo "sha=${sha:-HEAD^}" >> "$GITHUB_OUTPUT"
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: ${{ steps.base.outputs.sha }}
+          filters: |
+            app:
+              - 'backend/**'
+              - 'frontend/**'
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [web, api]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-${{ matrix.target }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.target == 'web' && 'frontend' || 'backend' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            ${{ matrix.target == 'web' && format('NEXT_PUBLIC_API_URL={0}', env.API_PUBLIC_URL) || '' }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-${{ matrix.target }}:cache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-${{ matrix.target }}:cache,mode=max
+
+  dispatch:
+    needs: [changes, build]
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: compute tag
+        id: tag
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          repository: aswinkunju/infra
+          event-type: deploy
+          client-payload: >-
+            {"app": "${{ env.APP }}", "env": "prod", "image_tag": "${{ steps.tag.outputs.tag }}"}
+
+  cleanup:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [web, api]
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ env.APP }}-${{ matrix.target }}
+          package-type: container
+          min-versions-to-keep: 10
+          ignore-versions: '^(latest|.*cache.*)$'

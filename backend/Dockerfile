@@ -17,4 +17,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 # Single worker on purpose: DuckDB is single-writer (see docs/plans/README.md).
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# On the shared Swarm, config arrives as a Docker secret mounted at
+# /run/secrets/app_env (see infra repo's stack.yml) — source it into the process env
+# before startup. Absent locally (docker-compose.yml sets env vars directly instead).
+CMD ["sh", "-c", "[ -f /run/secrets/app_env ] && set -a && . /run/secrets/app_env && set +a; alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
