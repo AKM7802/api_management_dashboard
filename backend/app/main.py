@@ -1,5 +1,6 @@
 """FastAPI app wiring: routers, lifespan (DB init, usage writer, HTTP client)."""
 
+import logging
 from contextlib import asynccontextmanager
 
 import httpx
@@ -9,6 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import apis, auth, invitations, proxy, teams, tokens, usage
 from app.config import get_settings
 from app.db.postgres import init_db
+
+# Root logger defaults to WARNING with no handler, which silently drops the
+# app.* loggers' INFO records (e.g. app.alerts confirming a signup alert was
+# sent) — this is what actually makes them show up in `docker service logs`.
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager

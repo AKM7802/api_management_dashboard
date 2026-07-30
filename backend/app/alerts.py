@@ -14,7 +14,9 @@ logger = logging.getLogger("app.alerts")
 
 async def send_signup_alert(client: httpx.AsyncClient, settings: Settings, email: str) -> None:
     if not settings.alert_relay_url:
+        logger.info("alert-relay not configured (ALERT_RELAY_URL unset) — skipping signup alert")
         return
+    logger.info("sending signup alert to alert-relay for %s", email)
     try:
         resp = await client.post(
             f"{settings.alert_relay_url.rstrip('/')}/alert",
@@ -25,3 +27,5 @@ async def send_signup_alert(client: httpx.AsyncClient, settings: Settings, email
         resp.raise_for_status()
     except httpx.HTTPError as exc:
         logger.warning("signup alert failed to reach alert-relay: %s", exc)
+    else:
+        logger.info("signup alert delivered to alert-relay (status=%s)", resp.status_code)
