@@ -18,8 +18,10 @@ async def send_signup_alert(client: httpx.AsyncClient, settings: Settings, email
         return
     logger.info("sending signup alert to alert-relay for %s", email)
     try:
+        # ALERT_RELAY_URL is the full endpoint (e.g. .../alert), not a base URL —
+        # see apps/alert-relay/README.md in aswinkunju/infra-server.
         resp = await client.post(
-            f"{settings.alert_relay_url.rstrip('/')}/alert",
+            settings.alert_relay_url,
             json={"app": "api-mgmt-dashboard", "event": "user.signup", "message": f"New signup: {email}"},
             headers={"Authorization": f"Bearer {settings.alert_relay_api_key}"},
             timeout=5.0,
