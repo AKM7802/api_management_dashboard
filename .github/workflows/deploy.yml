@@ -41,7 +41,13 @@ jobs:
         run: |
           sha=$(gh run list --workflow=deploy.yml --branch=master --status=success \
                   --json headSha --jq '.[0].headSha' --limit 1 || true)
-          echo "sha=${sha:-HEAD^}" >> "$GITHUB_OUTPUT"
+          # No prior successful run (e.g. this app's very first deploy)? Diff against
+          # git's well-known empty-tree hash instead of "HEAD^" — HEAD^ isn't a valid
+          # ref for paths-filter to fetch (actions/checkout's shallow clone doesn't have
+          # it either), so it always failed with "invalid refspec 'HEAD^'" on a first
+          # run. The empty-tree hash is a fixed constant every git repo already has, so
+          # diffing against it just means "everything is new" — correct for a first run.
+          echo "sha=${sha:-4b825dc642cb6eb9a060e54bf8d69288fbee4904}" >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v3
         id: filter
         with:
